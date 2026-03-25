@@ -44,6 +44,7 @@ dependencies = [
     # Database
     "asyncpg>=0.29.0",                   # Async PostgreSQL
     "pgvector>=0.3.0",                   # pgvector Python client
+    "sqlalchemy>=2.0.0",                 # Used by pgvector and query builders
     "redis>=5.0.0",                      # Async Redis
 
     # Templating
