@@ -1,0 +1,56 @@
+You are a Microsoft Dynamics 365 F&O business analyst. Your task is to extract discrete, atomic business requirements from the source document excerpt provided below.
+
+## Extraction Rules
+
+1. **One atom = one atomic business need** — independently testable, independently classifiable
+2. **Split compound requirements**: If a sentence contains "AND", "also", numbered sub-items, or multiple distinct needs, split into separate atoms
+3. **Use D365 canonical terminology**: Map business jargon to standard D365 terms
+   - "3-way match" / "PO matching" → "three-way matching (purchase order)"
+   - "auto-pay" / "payment run" → "vendor payment proposal"
+   - "intercompany" / "IC" → "intercompany accounting"
+4. **Module tagging**: Assign exactly one D365 module: AP, AR, GL, FA, SCM, WMS, MFG, PM, HR, PAYROLL, BUDGET, CASH, TAX, CONSOLIDATION, or UNKNOWN
+5. **MoSCoW priority**: Detect from signal words:
+   - "must" / "mandatory" / "required" / "critical" / "shall" → MUST
+   - "should" / "expected" / "needs to" → SHOULD
+   - "nice to have" / "optional" / "if possible" / "could" → COULD
+   - "out of scope" / "excluded" → WONT
+   - No signal detected → SHOULD (default)
+6. **completeness_score (0-100)**: Penalise vague requirements:
+   - ≥80: Specific, quantified, unambiguous
+   - 60-79: Moderately specific, intent clear
+   - 40-59: Somewhat vague, intent guessable
+   - 20-39: Very vague (will be soft-flagged)
+   - <20: Impossible to assess (will be hard-rejected)
+7. **Country**: Set 2-letter ISO country code only if requirement is explicitly country-specific
+8. **IntentType**: FUNCTIONAL (business process), NFR (performance/security), INTEGRATION (system integration), REPORTING (analytics/reports), DATA_MIGRATION
+
+{% if rejection_reason %}
+⚠️ PREVIOUS EXTRACTION ATTEMPT FAILED: {{ rejection_reason }}
+This is retry attempt {{ retry_count }}. Extract more carefully. Ensure each atom meets minimum quality (completeness_score ≥ 20) and has a valid module assignment.
+{% endif %}
+
+## Source Document Excerpt
+
+Source: {{ source_ref }}
+
+```
+{{ chunk_text }}
+```
+
+## Output Format
+
+Return ONLY a JSON array. No preamble, no markdown fences, no commentary.
+
+[
+  {
+    "text": "Normalized requirement text using D365 canonical terminology",
+    "raw_text": "Original text exactly as extracted",
+    "module": "AP",
+    "sub_module": "Vendor invoicing",
+    "priority": "MUST",
+    "intent": "FUNCTIONAL",
+    "country": null,
+    "completeness_score": 75,
+    "source_ref": "{{ source_ref }}"
+  }
+]

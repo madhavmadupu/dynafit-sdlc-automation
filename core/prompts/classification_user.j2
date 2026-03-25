@@ -1,0 +1,52 @@
+## Requirement to Classify
+
+**Requirement Text:** {{ requirement_text }}
+**Module:** {{ module }}{% if country %} | **Country Scope:** {{ country }}{% endif %}
+**Priority:** {{ priority }}
+**Intent:** {{ intent }}
+**Match Score:** {{ "%.2f"|format(composite_score) }} ({{ confidence_band }} confidence band)
+
+---
+
+## Top D365 {{ module }} Capabilities (Retrieved Evidence)
+
+{% if top_candidates %}
+{% for cap in top_candidates %}
+### {{ loop.index }}. {{ cap.name }} — Score: {{ "%.3f"|format(cap.final_score) }}
+**Module:** {{ cap.module }}{% if cap.sub_module %} › {{ cap.sub_module }}{% endif %}
+**Description:** {{ cap.description }}
+{% if cap.configuration_notes %}
+**Configuration Notes:** {{ cap.configuration_notes }}
+{% endif %}
+{% if cap.license_requirement %}
+**License Requirement:** {{ cap.license_requirement }}
+{% endif %}
+{% if cap.localization_gaps %}
+{% for country_code, gaps in cap.localization_gaps.items() %}
+**Localization Gaps ({{ country_code }}):** {{ gaps | join('; ') }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+*No D365 capabilities retrieved for this requirement. Consider this a strong indicator of GAP.*
+{% endif %}
+
+---
+
+{% if prior_decisions %}
+## Historical Precedent (Prior Implementation Waves)
+
+{% for prior in prior_decisions %}
+- **Wave {{ prior.wave_id }}:** {{ prior.verdict }} (confidence: {{ "%.2f"|format(prior.confidence) }})
+  - Original text: "{{ prior.original_text[:120] }}{% if prior.original_text|length > 120 %}…{% endif %}"
+  - Rationale: {{ prior.rationale[:200] }}{% if prior.rationale|length > 200 %}…{% endif %}
+  - {% if prior.is_exact_match %}✅ Exact match (same atom_hash){% else %}≈ Similar requirement (similarity: {{ "%.2f"|format(prior.similarity_to_current) }}){% endif %}
+  - {% if prior.overridden_by_consultant %}⚠️ AI verdict was overridden by a consultant{% endif %}
+{% endfor %}
+
+{% endif %}
+
+---
+
+Classify this requirement now. Remember to follow the mandatory business rules and output only the XML block.

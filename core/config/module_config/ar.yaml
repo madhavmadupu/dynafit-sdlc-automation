@@ -1,0 +1,51 @@
+# Accounts Receivable module configuration
+module: AR
+display_name: Accounts Receivable
+
+signal_weights:
+  cosine: 0.50
+  overlap: 0.30
+  history: 0.20
+
+threshold_adjustments: {}
+
+d365_localization_gaps:
+  IT:
+    - "Italian e-invoice (FatturaPA / SDI): Standard D365 IT localization; verify version"
+    - "SEPA Direct Debit mandate management: Configurable in D365 with SEPA localization"
+  IN:
+    - "GST e-invoicing (under INR 10cr threshold): D365 India localization supports IRN/QR code; verify threshold compliance"
+    - "India e-way bill (outbound deliveries): Requires connector or custom development"
+  DE:
+    - "ZUGFeRD hybrid e-invoices (customer-facing): Outbound ZUGFeRD requires third-party PDF generator or ISV"
+  US:
+    - "ACH return processing (NACHA R-codes): D365 EFT return processing covers basic scenarios; complex R-code automation needs custom"
+
+canonical_terms:
+  "customer invoice": "customer invoice journal"
+  "sales invoice": "customer invoice journal"
+  "credit memo (customer)": "customer credit note"
+  "collections": "collections management"
+  "dunning": "collections letter (dunning)"
+  "statement of account": "customer account statement"
+  "cash application": "customer payment application"
+  "remittance": "payment remittance"
+  "direct debit": "SEPA direct debit"
+  "lockbox": "lockbox payment processing"
+  "customer aging": "customer aging report"
+  "bad debt": "bad debt provision"
+  "write-off": "customer write-off"
+  "revenue recognition": "revenue recognition (ASC 606)"
+  "deferred revenue": "deferred revenue schedule"
+
+sub_modules:
+  - "Customer invoicing"
+  - "Customer payments"
+  - "Collections management"
+  - "Revenue recognition"
+  - "Credit management"
+  - "Customer aging"
+  - "Bank reconciliation (AR)"
+  - "Dunning / Collections letters"
+  - "Interest notes"
+  - "Customer statements"

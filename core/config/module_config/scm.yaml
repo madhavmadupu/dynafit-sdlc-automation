@@ -1,0 +1,60 @@
+# Supply Chain Management module configuration
+module: SCM
+display_name: Supply Chain Management
+
+signal_weights:
+  cosine: 0.48
+  overlap: 0.32
+  history: 0.20
+
+threshold_adjustments:
+  fast_track_fit: 0.83    # SCM is moderately documented; slightly adjusted
+
+d365_localization_gaps:
+  IN:
+    - "GST on procurement: D365 India localization provides GST integration; verify sub-rules correctness"
+    - "e-way bill for inbound transfers: Requires connector or custom"
+  US:
+    - "US customs (CBP ACE filing): Requires TradeBeam or other trade compliance ISV"
+    - "DDTC/ITAR compliance checks: Not standard; requires compliance ISV"
+  EU:
+    - "EU customs declaration (Import Control System 2 / ICS2): Requires customs connector"
+
+canonical_terms:
+  "purchase order": "purchase order (PO)"
+  "PO": "purchase order (PO)"
+  "vendor": "vendor (supplier)"
+  "supplier": "vendor (supplier)"
+  "trade agreement": "trade agreement (price/discount)"
+  "price list": "sales trade agreement"
+  "BOM": "bill of materials (BOM)"
+  "bill of materials": "bill of materials (BOM)"
+  "drop ship": "direct delivery (drop shipment)"
+  "drop shipment": "direct delivery (drop shipment)"
+  "back order": "backorder"
+  "MRP": "master planning (MRP)"
+  "material requirements planning": "master planning (MRP)"
+  "safety stock": "safety stock planning"
+  "min/max replenishment": "min/max replenishment strategy"
+  "kanban": "kanban replenishment"
+  "vendor-managed inventory": "consignment inventory"
+  "consignment": "consignment inventory"
+  "RFQ": "request for quotation (RFQ)"
+  "request for quotation": "request for quotation (RFQ)"
+  "subcontracting": "subcontracting (production outsourcing)"
+  "landed cost": "landed cost management"
+  "freight cost": "transportation management / landed cost"
+
+sub_modules:
+  - "Purchase orders"
+  - "Vendor management"
+  - "Trade agreements"
+  - "Master planning (MRP)"
+  - "Inventory management"
+  - "Warehouse management lite"
+  - "Transportation management"
+  - "Procurement categories"
+  - "Request for quotation"
+  - "Returns management"
+  - "Landed cost"
+  - "Consignment / VMI"

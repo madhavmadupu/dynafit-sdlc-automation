@@ -1,0 +1,56 @@
+# General Ledger module configuration
+module: GL
+display_name: General Ledger
+
+signal_weights:
+  cosine: 0.50
+  overlap: 0.30
+  history: 0.20
+
+threshold_adjustments: {}   # Use global defaults
+
+d365_localization_gaps:
+  DE:
+    - "GoBD (Grundsätze ordnungsmäßiger Buchführung und Datenverwaltung): D365 Core GL supports most GoBD requirements; complete compliance requires audit certification"
+    - "ELSTER (German tax data submission): Not standard; requires ISV connector for direct ELSTER submission"
+  FR:
+    - "FEC (Fichier des Ecritures Comptables): D365 FR localization supports FEC export — verify if localization pack installed"
+    - "Mandatory chart of accounts (PCG): French chart of accounts available in D365 FR localization"
+  GB:
+    - "Making Tax Digital (MTD) for VAT: Requires UK localization package + HMRC-compliant submission connector"
+  US:
+    - "US GAAP ASC 842 (Lease accounting): Supported via D365 Asset Leasing module — additional license required"
+
+canonical_terms:
+  "chart of accounts": "chart of accounts (COA)"
+  "COA": "chart of accounts (COA)"
+  "journal entry": "general journal"
+  "JE": "general journal"
+  "financial statements": "financial reports"
+  "trial balance": "trial balance report"
+  "period close": "financial period close"
+  "month end close": "financial period close"
+  "year end close": "fiscal year close"
+  "intercompany elimination": "intercompany elimination (consolidation)"
+  "consolidation": "financial consolidation"
+  "currency revaluation": "foreign currency revaluation"
+  "FX revaluation": "foreign currency revaluation"
+  "budget vs actual": "budget control (GL)"
+  "encumbrance": "budget encumbrance"
+  "reversing entry": "reversing journal entry"
+  "accrual": "accrual journal"
+  "prepaid expense": "prepaid expense accrual"
+  "allocation": "ledger allocation rule"
+  "dimension": "financial dimension"
+
+sub_modules:
+  - "Chart of accounts"
+  - "Journal management"
+  - "Period close"
+  - "Financial reporting"
+  - "Consolidation"
+  - "Currency revaluation"
+  - "Budget control"
+  - "Allocations"
+  - "Financial dimensions"
+  - "Tax integration"

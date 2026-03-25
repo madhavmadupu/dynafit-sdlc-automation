@@ -1,0 +1,73 @@
+# Accounts Payable module configuration
+module: AP
+display_name: Accounts Payable
+
+signal_weights:
+  cosine: 0.50      # Must sum to 1.0
+  overlap: 0.30
+  history: 0.20
+
+threshold_adjustments:
+  fast_track_fit: 0.82    # AP is well-documented; slightly lower fast-track threshold
+  soft_gap: 0.38
+
+d365_localization_gaps:
+  IN:   # India-specific AP gaps
+    - "TDS (Tax Deducted at Source) 194Q withholding: Standard D365 has basic TDS; advanced 194Q compliance typically requires ISV (e.g., Kovair TDS, QR Systems)"
+    - "GST reconciliation (GSTR-2B matching): Not standard in D365; requires ISV or custom X++ development"
+    - "e-way bill integration: Requires custom development or ISV connector"
+    - "Vendor credit note reversal as per Indian tax rules: Partial standard support; may need configuration"
+  DE:   # Germany-specific AP gaps
+    - "DATEV export integration: Always GAP — requires custom X++ development or third-party connector"
+    - "GoBD compliance (digital tax audit): Standard D365 has GoBD-relevant features but full compliance usually requires configuration + ISV"
+    - "ZUGFeRD / XRechnung e-invoice format: Supported in recent D365 versions; verify version"
+    - "Reverse charge VAT automation: Configurable in D365 but complex scenarios may require custom rule logic"
+  FR:   # France-specific AP gaps
+    - "FEC (Fichier des Ecriture Comptables) export: Available in D365 GL; verify AP-specific ledger entries"
+    - "Chorus Pro e-invoice mandate (public sector suppliers): Requires connector; not standard"
+  BR:   # Brazil-specific AP gaps
+    - "Nota Fiscal (NF-e) processing: Standard D365 localization (Latin America) covers basic NF-e; complex tax scenarios need ISV"
+    - "SPED electronic accounting: Requires localization package — verify if applicable version installed"
+
+canonical_terms:
+  "invoice matching": "three-way matching (purchase order)"
+  "3-way match": "three-way matching (purchase order)"
+  "three way match": "three-way matching (purchase order)"
+  "po matching": "three-way matching (purchase order)"
+  "payment run": "vendor payment proposal"
+  "auto-pay": "vendor payment proposal"
+  "automatic payments": "vendor payment proposal"
+  "payment batch": "vendor payment proposal"
+  "GR/IR": "product receipt accrual"
+  "goods receipt/invoice receipt": "product receipt accrual"
+  "vendor invoice": "vendor invoice journal"
+  "supplier invoice": "vendor invoice journal"
+  "intercompany": "intercompany accounting"
+  "inter-company": "intercompany accounting"
+  "IC transactions": "intercompany accounting"
+  "prepayment": "vendor prepayment journal"
+  "down payment (vendor)": "vendor prepayment journal"
+  "credit note": "vendor credit note"
+  "debit memo": "vendor debit note"
+  "payment terms": "vendor payment terms"
+  "aging report": "vendor aging report"
+  "early payment discount": "cash discount (vendor)"
+  "dynamic discounting": "cash discount (vendor)"
+  "bank file": "electronic payment format"
+  "bank transfer": "bank payment"
+  "SEPA": "SEPA credit transfer"
+  "ACH": "ACH electronic payment"
+  "invoice approval": "vendor invoice approval workflow"
+  "invoice workflow": "vendor invoice approval workflow"
+
+sub_modules:
+  - "Vendor invoicing"
+  - "Vendor payments"
+  - "Vendor management"
+  - "Three-way matching"
+  - "Invoice register"
+  - "Payment journal"
+  - "Bank payment"
+  - "Foreign currency revaluation"
+  - "Withholding tax"
+  - "Cash discount"
