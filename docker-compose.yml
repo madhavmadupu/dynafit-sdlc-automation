@@ -1,0 +1,80 @@
+version: "3.9"
+
+# DYNAFIT — Local Development Stack
+# Starts all required infrastructure services
+# Usage: docker compose up -d
+
+services:
+  # ─── Qdrant Vector Database ───────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.10.0
+    container_name: dynafit_qdrant
+    ports:
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── PostgreSQL + pgvector ────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: dynafit_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: dynafit
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: dynafit
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dynafit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: dynafit_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Celery Worker ────────────────────────────────────────────────────────
+  # Uncomment to run background workers locally
+  # celery_worker:
+  #   build: .
+  #   container_name: dynafit_worker
+  #   command: celery -A api.celery_app worker --loglevel=info --concurrency=2
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - POSTGRES_URL=postgresql+asyncpg://dynafit:password@postgres:5432/dynafit
+  #     - QDRANT_HOST=qdrant
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #     qdrant:
+  #       condition: service_healthy
+
+volumes:
+  qdrant_data:
+  postgres_data:
+  redis_data:
