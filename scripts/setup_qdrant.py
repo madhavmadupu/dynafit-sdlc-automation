@@ -21,7 +21,7 @@ log = structlog.get_logger()
 
 
 async def setup_qdrant() -> None:
-    uri = settings.QDRANT_URI
+    uri = f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}"
     api_key = settings.QDRANT_API_KEY
     if not uri:
         log.error("setup.missing_qdrant_uri")
@@ -38,7 +38,7 @@ async def setup_qdrant() -> None:
         sys.exit(1)
 
     # 1. D365 Capabilities Hybrid Collection
-    cap_coll = settings.QDRANT_CAPABILITIES_COLL
+    cap_coll = settings.D365_KB_COLLECTION
     if cap_coll not in existing:
         log.info(f"setup.creating_collection", collection=cap_coll)
         await client.create_collection(
@@ -72,7 +72,7 @@ async def setup_qdrant() -> None:
         log.info(f"setup.collection_exists", collection=cap_coll)
 
     # 2. MS Learn Documents Collection (Dense Only)
-    msl_coll = settings.QDRANT_MS_LEARN_COLL
+    msl_coll = settings.MS_LEARN_COLLECTION
     if msl_coll not in existing:
         log.info(f"setup.creating_collection", collection=msl_coll)
         await client.create_collection(

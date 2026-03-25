@@ -74,7 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_hist_vector ON historical_fitments USING hnsw (em
 
 
 async def run_migrations() -> None:
-    uri = settings.POSTGRES_URI
+    uri = settings.POSTGRES_URL
     if not uri:
         log.error("setup.missing_pg_uri")
         sys.exit(1)
