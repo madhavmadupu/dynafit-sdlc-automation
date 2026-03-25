@@ -156,3 +156,6 @@ plugins = ["pydantic.mypy"]
 
 [tool.hatch.envs.default]
 dependencies = ["dynafit[dev]"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["core", "agents", "infrastructure", "api", "scripts"]
