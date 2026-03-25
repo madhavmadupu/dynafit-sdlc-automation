@@ -39,6 +39,11 @@ def create_app() -> FastAPI:
 
     app.include_router(router, prefix="/api/v1")
 
+    @app.get("/")
+    async def root():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/docs")
+
     @app.on_event("startup")
     async def startup_event() -> None:
         log.info("app.startup_init")

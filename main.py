@@ -3,17 +3,20 @@ main.py
 Root entrypoint for running the DYNAFIT application.
 """
 import sys
+import uvicorn
+from api.routes import router
+
+from api.server import create_app
+from core.config.settings import settings
+
+app = create_app()
+app.include_router(router, prefix="/api")
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "run":
         # Start API server
-        import uvicorn
-        from api.server import create_app
-        from core.config.settings import settings
-
-        app = create_app()
         uvicorn.run(
-            app,
+            "main:app",
             host="0.0.0.0",
             port=8000,
             log_level="info",
