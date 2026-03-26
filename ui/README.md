@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DYNAFIT — Requirement Fitment Engine UI
 
-## Getting Started
+## Overview
 
-First, run the development server:
+DYNAFIT is a Next.js dashboard that provides a visual interface for the DYNAFIT backend pipeline — an AI multi-agent system that automates fitment analysis of business requirements against standard Microsoft Dynamics 365 Finance & Operations (D365 F&O) capabilities.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+The UI walks users through **5 sequential phases**, each corresponding to an autonomous backend agent, with real-time status tracking, error handling, and result visualization.
+
+---
+
+## Tech Stack
+
+| Layer            | Technology              |
+| ---------------- | ----------------------- |
+| Framework        | Next.js 14 (App Router) |
+| Language         | TypeScript (strict)     |
+| Styling          | Tailwind CSS            |
+| Components       | shadcn/ui               |
+| State Management | Zustand (with devtools) |
+| Animations       | Framer Motion           |
+| Icons            | Lucide React            |
+| Charts           | Recharts                |
+| Font             | Geist (next/font)       |
+
+---
+
+## Project Structure
+
+```
+dynafit/
+├── app/
+│   ├── globals.css              # Global styles + Tailwind base
+│   ├── layout.tsx               # Root layout (dark theme)
+│   ├── page.tsx                 # Redirects to /dashboard
+│   └── dashboard/
+│       └── page.tsx             # Main dashboard page
+├── components/
+│   ├── layout/
+│   │   ├── Navbar.tsx           # Top nav: logo, run controls, export
+│   │   ├── PhaseStepper.tsx     # Phase progress bar (top of dashboard)
+│   │   └── Sidebar.tsx          # Optional collapsible sidebar
+│   ├── phases/
+│   │   ├── Phase1Ingestion.tsx  # File upload + ingestion agent UI
+│   │   ├── Phase2Retrieval.tsx  # RAG knowledge retrieval UI
+│   │   ├── Phase3Matching.tsx   # Semantic matching + confidence scores
+│   │   ├── Phase4Classification.tsx  # LLM classification results table
+│   │   └── Phase5Validation.tsx # Human review + fitment matrix export
+│   ├── shared/
+│   │   ├── PhaseCard.tsx        # Reusable phase status card wrapper
+│   │   ├── StatusBadge.tsx      # FIT / PARTIAL FIT / GAP badge
+│   │   ├── ConfidenceMeter.tsx  # Visual confidence score bar
+│   │   ├── StatCard.tsx         # Metric summary card
+│   │   ├── ProgressRing.tsx     # Circular progress indicator
+│   │   ├── LogStream.tsx        # Live processing log feed
+│   │   ├── ErrorBanner.tsx      # Error state with retry action
+│   │   └── EmptyState.tsx       # Empty/idle state placeholder
+│   └── modals/
+│       └── OverrideModal.tsx    # Consultant classification override dialog
+├── store/
+│   └── useDynafitStore.ts       # Zustand store — all app state
+├── types/
+│   └── index.ts                 # All TypeScript interfaces
+├── lib/
+│   ├── utils.ts                 # cn(), formatters, color helpers
+│   └── simulation.ts            # Mock pipeline simulator (replace with real API)
+├── hooks/
+│   ├── usePhaseRunner.ts        # Hook to trigger individual phase runs
+│   └── usePolling.ts            # Hook to poll phase status from backend
+└── public/
+    └── logo.svg
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Color Palette (Dark Theme)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```css
+/* Base surfaces */
+--surface: #0f0f14 /* page background */ --surface-card: #16161e
+  /* card / panel background */ --surface-border: #1e1e2a /* border color */
+  --surface-hover: #1c1c28 /* hover state */ /* Brand (indigo) */
+  --brand-400: #818cf8 --brand-500: #6366f1 --brand-600: #4f46e5
+  /* Status colors */ --fit: #34d399 /* emerald-400 */ --partial: #fbbf24
+  /* amber-400 */ --gap: #f87171 /* red-400 */ --error: #f87171
+  --warning: #fbbf24 --info: #818cf8;
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Running the Project
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run build
+npm run lint
+```
