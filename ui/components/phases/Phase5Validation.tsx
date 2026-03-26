@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
 import { simulateValidation } from "@/lib/simulation";
 import { api } from "@/lib/api";
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import type { ClassificationResult } from "@/types";
 import {
   CheckCircle, Loader2, Lock, ArrowRight, Download, Shield,
-  AlertTriangle, FileText, Settings, ArrowDown
+  AlertTriangle, FileText, Settings, ArrowDown, Play
 } from "lucide-react";
 
 interface Props {
@@ -33,8 +33,59 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
   const [overrideItem, setOverrideItem] = useState<ClassificationResult | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const fitments = run.validatedFitments;
+  // Pipeline paused for review: validation idle, classification done, and we have results
+  const awaitingReview = phase.status === "idle" && canRun && backendRunId && fitments.length > 0;
+
+  const { startPhase, completePhase } = useDynafitStore();
+
+  const handleSubmitReview = useCallback(async () => {
+    if (!backendRunId) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      // Collect any overrides the user has made
+      const decisions = fitments
+        .filter((f) => f.consultantVerified)
+        .map((f) => ({
+          atom_id: f.requirementId,
+          verdict: f.finalVerdict,
+          reason: f.overrideReason || "Consultant reviewed",
+          reviewed_by: f.overriddenBy || "consultant",
+        }));
+
+      startPhase("validation");
+
+      const result = await api.submitReview(backendRunId, { decisions });
+
+      // Fetch final results and complete validation
+      const results = await api.getRunResults(backendRunId);
+      if (results.classificationResults?.length) {
+        completePhase("validation", {
+          totalVerified: results.classificationResults.length,
+          overrides: decisions.length,
+          conflicts: 0,
+          exportReady: "true",
+        });
+      } else {
+        completePhase("validation", {
+          totalVerified: fitments.length,
+          overrides: decisions.length,
+          conflicts: 0,
+          exportReady: "true",
+        });
+      }
+    } catch (e: any) {
+      setSubmitError(e.message || "Failed to submit review");
+      // Revert validation phase back to idle
+      useDynafitStore.getState().setPhaseStatus("validation", "idle");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [backendRunId, fitments, startPhase, completePhase]);
 
   const handleExport = async () => {
     if (hasBackend && backendRunId) {
@@ -102,8 +153,98 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
         </div>
       )}
 
-      {/* Idle */}
-      {phase.status === "idle" && canRun && (
+      {/* Awaiting Review — show review queue + submit button */}
+      {awaitingReview && (
+        <div className="space-y-4 animate-slide-up">
+          {submitError && (
+            <ErrorBanner message={submitError} onRetry={handleSubmitReview} />
+          )}
+
+          <div className="bg-amber-400/5 border border-amber-400/20 rounded-xl p-4 flex items-center gap-3">
+            <Shield size={16} className="text-amber-400" />
+            <div>
+              <p className="text-xs font-medium text-amber-300">Awaiting Consultant Review</p>
+              <p className="text-[10px] text-slate-500">
+                Review the classification results below. Override any incorrect verdicts, then submit to run validation.
+              </p>
+            </div>
+          </div>
+
+          {/* Review queue table */}
+          <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-border">
+              <div className="flex items-center gap-2">
+                <Shield size={14} className="text-brand-400" />
+                <span className="text-xs font-medium text-slate-300">Review Queue — {fitments.length} items</span>
+              </div>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-surface-border bg-surface-hover">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-24">ID</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Requirement</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Verdict</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-28">Confidence</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fitments.slice(0, 50).map((f) => {
+                  const isLowConf = f.confidence < 0.65;
+                  return (
+                    <tr
+                      key={f.requirementId}
+                      className={cn(
+                        "data-row border-b border-surface-border/50 last:border-0",
+                        isLowConf && "border-l-2 border-l-amber-400/50"
+                      )}
+                    >
+                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{f.requirementId}</td>
+                      <td className="px-4 py-2.5 text-xs text-slate-300 max-w-xs truncate">{f.requirementText || f.rationale}</td>
+                      <td className="px-4 py-2.5"><StatusBadge status={f.finalVerdict} /></td>
+                      <td className="px-4 py-2.5"><ConfidenceMeter value={f.confidence} /></td>
+                      <td className="px-4 py-2.5">
+                        <button
+                          onClick={() => {
+                            setOverrideItem(f);
+                            setModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 rounded-md border border-brand-500/30 bg-brand-500/5 text-brand-300 text-[10px] hover:bg-brand-500/15 transition-colors"
+                        >
+                          Override
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Submit review button */}
+          <button
+            onClick={handleSubmitReview}
+            disabled={submitting}
+            className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {submitting ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Running Validation...
+              </>
+            ) : (
+              <>
+                <Play size={16} />
+                Submit Review & Run Validation
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Idle — no results yet */}
+      {phase.status === "idle" && canRun && !awaitingReview && (
         <>
           <div className="bg-surface-card border border-surface-border rounded-xl p-5">
             <p className="text-xs text-slate-400 mb-3 font-medium">Validation Pipeline Steps</p>
@@ -138,7 +279,7 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
           {backendRunId && (
             <div className="flex items-center justify-center gap-2 py-4 text-brand-400">
               <Loader2 size={16} className="animate-spin" />
-              <span className="text-sm">Waiting for backend pipeline to reach validation...</span>
+              <span className="text-sm">Pipeline is running — validation will begin after classification...</span>
             </div>
           )}
         </>
