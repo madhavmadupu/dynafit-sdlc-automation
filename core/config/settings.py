@@ -24,11 +24,11 @@ class DynafitSettings(BaseSettings):
 
     # ── LLM ──────────────────────────────────────────────────────────────────
     CLASSIFICATION_MODEL: str = Field(
-        default="claude-3-5-sonnet-20241022",
+        default="claude-sonnet-4-6",
         description="Anthropic model for Phase 4 classification (chain-of-thought)",
     )
     INGESTION_MODEL: str = Field(
-        default="claude-3-haiku-20240307",
+        default="claude-haiku-4-5-20251001",
         description="Anthropic model for Phase 1 requirement extraction (high-volume, lower cost)",
     )
     LLM_MAX_RETRIES: int = Field(

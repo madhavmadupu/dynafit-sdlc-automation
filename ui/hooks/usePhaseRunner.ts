@@ -121,26 +121,12 @@ export function usePhaseRunner() {
                 startPhase(phase);
               }
             }
-
-            // Find the latest completed phase for navigation
-            let lastCompleted = -1;
-            for (let i = PHASE_ORDER.length - 1; i >= 0; i--) {
-              if (state.phases[PHASE_ORDER[i]]?.status === "completed") {
-                lastCompleted = i;
-                break;
-              }
-            }
-            if (lastCompleted >= 0) {
-              // Navigate to the phase after the last completed one, or stay on last
-              const target = Math.min(lastCompleted + 1, PHASE_ORDER.length - 1);
-              goToPhase(target);
-            }
           }
 
-          // If pipeline already finished, fetch results
+          // If pipeline already finished, fetch results and populate store
+          // but stay on Phase 1 so user can review each phase's stats
           if (state.status === "AWAITING_REVIEW" || state.status === "COMPLETED") {
             await fetchAndPopulateResults(runId);
-            // Mark validation complete with stats
             const store = useDynafitStore.getState();
             const validated = store.run.validatedFitments;
             if (validated.length > 0) {
@@ -151,51 +137,40 @@ export function usePhaseRunner() {
                 exportReady: "true",
               });
             }
-            goToPhase(4);
             setIsRunning(false);
+            // Stay on Phase 1 — user navigates manually via "Proceed" buttons
+            goToPhase(0);
+          } else if (state.status === "RUNNING") {
+            // Pipeline is still running — find the active phase
+            const processingIdx = PHASE_ORDER.findIndex(
+              (p) => state.phases?.[p]?.status === "processing"
+            );
+            if (processingIdx >= 0) {
+              goToPhase(processingIdx);
+            }
           }
         },
 
         onPhaseStart: (phase) => {
           startPhase(phase as PhaseKey);
-          const idx = PHASE_ORDER.indexOf(phase as PhaseKey);
-          if (idx >= 0) {
-            goToPhase(idx);
-          }
         },
 
         onPhaseComplete: (phase, stats) => {
           completePhase(phase as PhaseKey, stats);
-          // Auto-navigate to next phase
-          const idx = PHASE_ORDER.indexOf(phase as PhaseKey);
-          if (idx >= 0 && idx + 1 < PHASE_ORDER.length) {
-            goToPhase(idx + 1);
-          }
         },
 
         onPipelinePaused: async () => {
-          // Pipeline paused at validation — fetch results
           await fetchAndPopulateResults(runId);
-
-          // Complete the validation phase with stats
-          const store = useDynafitStore.getState();
-          const validated = store.run.validatedFitments;
-          completePhase("validation", {
-            totalVerified: validated.length,
-            overrides: 0,
-            conflicts: validated.filter(
-              (v) => v.conflictFlags.length > 0
-            ).length,
-            exportReady: "true",
-          });
-
-          goToPhase(4); // Navigate to Phase 5
           setIsRunning(false);
+          // Navigate to Phase 1 so the user can review each phase's stats
+          goToPhase(0);
         },
 
         onPipelineComplete: async () => {
           await fetchAndPopulateResults(runId);
           setIsRunning(false);
+          // Navigate to Phase 1 so the user can review each phase's results
+          goToPhase(0);
         },
 
         onPipelineError: (message) => {

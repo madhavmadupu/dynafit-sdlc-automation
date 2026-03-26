@@ -10,7 +10,8 @@
       "Bash(source venv/Scripts/activate)",
       "Bash(netstat -ano)",
       "Bash(taskkill //PID 28216 //F)",
-      "Bash(taskkill //PID 20184 //F)"
+      "Bash(taskkill //PID 20184 //F)",
+      "Bash(taskkill:*)"
     ]
   }
 }

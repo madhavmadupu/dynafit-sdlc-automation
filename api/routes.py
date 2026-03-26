@@ -204,10 +204,14 @@ async def _run_pipeline_background(run_id: str, state: dict, config: dict):
                     "stats": stats,
                 })
 
-                # Start next phase
+                # Start next phase (but NOT validation — it's gated by interrupt_before)
                 idx = PHASE_ORDER.index(node_name)
                 if idx + 1 < len(PHASE_ORDER):
                     next_phase = PHASE_ORDER[idx + 1]
+                    if next_phase == "validation":
+                        # Don't emit phase_start for validation here —
+                        # it will only run after human review is submitted.
+                        continue
                     run_progress[run_id]["current_phase"] = next_phase
                     run_progress[run_id]["phases"][next_phase]["status"] = "processing"
                     await _emit_event(run_id, {"type": "phase_start", "phase": next_phase})
