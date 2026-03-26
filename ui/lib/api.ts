@@ -1,5 +1,7 @@
 "use client";
 
+import type { RequirementAtom, ClassificationResult } from "@/types";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "dynafit_dev_secret_key_123";
 
@@ -75,11 +77,12 @@ class DynafitAPI {
     runId: string,
     handlers: {
       onPhaseStart?: (phase: string) => void;
-      onPhaseComplete?: (phase: string, stats: Record<string, unknown>) => void;
+      onPhaseComplete?: (phase: string, stats: Record<string, string | number>) => void;
       onPipelinePaused?: (message: string) => void;
       onPipelineComplete?: () => void;
       onPipelineError?: (message: string) => void;
-      onState?: (state: unknown) => void;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onState?: (state: Record<string, any>) => void;
     }
   ): EventSource {
     const es = new EventSource(
@@ -139,15 +142,15 @@ class DynafitAPI {
     run_id: string;
     status: string;
     current_phase: string | null;
-    phases: Record<string, { status: string; stats: Record<string, unknown> }>;
+    phases: Record<string, { status: string; stats: Record<string, string | number> }>;
   }> {
     return this.request(`/api/v1/runs/${runId}/status`);
   }
 
   async getRunResults(runId: string): Promise<{
     run_id: string;
-    atoms: unknown[];
-    classificationResults: unknown[];
+    atoms: RequirementAtom[];
+    classificationResults: ClassificationResult[];
     llmCostUsd: number;
     humanReviewRequired: string[];
   }> {
