@@ -110,7 +110,7 @@ export function usePhaseRunner() {
       }
 
       const es = api.connectToStream(runId, {
-        onState: (state) => {
+        onState: async (state) => {
           // Process initial state snapshot — mark already-completed phases
           if (state.phases) {
             for (const phase of PHASE_ORDER) {
@@ -121,6 +121,38 @@ export function usePhaseRunner() {
                 startPhase(phase);
               }
             }
+
+            // Find the latest completed phase for navigation
+            let lastCompleted = -1;
+            for (let i = PHASE_ORDER.length - 1; i >= 0; i--) {
+              if (state.phases[PHASE_ORDER[i]]?.status === "completed") {
+                lastCompleted = i;
+                break;
+              }
+            }
+            if (lastCompleted >= 0) {
+              // Navigate to the phase after the last completed one, or stay on last
+              const target = Math.min(lastCompleted + 1, PHASE_ORDER.length - 1);
+              goToPhase(target);
+            }
+          }
+
+          // If pipeline already finished, fetch results
+          if (state.status === "AWAITING_REVIEW" || state.status === "COMPLETED") {
+            await fetchAndPopulateResults(runId);
+            // Mark validation complete with stats
+            const store = useDynafitStore.getState();
+            const validated = store.run.validatedFitments;
+            if (validated.length > 0) {
+              completePhase("validation", {
+                totalVerified: validated.length,
+                overrides: 0,
+                conflicts: validated.filter((v) => v.conflictFlags.length > 0).length,
+                exportReady: "true",
+              });
+            }
+            goToPhase(4);
+            setIsRunning(false);
           }
         },
 

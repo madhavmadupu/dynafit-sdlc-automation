@@ -44,18 +44,19 @@ class DynafitPostgresClient:
 
     async def create_run(self, run_id: str, source_files: list[str]) -> None:
         """Create a new pipeline run record."""
+        import json
         try:
             async with self._session_factory() as session:
                 await session.execute(
                     text("""
                         INSERT INTO dynafit_runs (run_id, status, source_files, created_at)
-                        VALUES (:run_id, :status, :source_files, NOW())
+                        VALUES (:run_id, :status, CAST(:source_files AS jsonb), NOW())
                         ON CONFLICT DO NOTHING
                     """),
                     {
                         "run_id": run_id,
                         "status": RunStatus.QUEUED.value,
-                        "source_files": ",".join(source_files),
+                        "source_files": json.dumps(source_files),
                     },
                 )
                 await session.commit()

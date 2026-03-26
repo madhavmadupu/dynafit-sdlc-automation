@@ -3,7 +3,14 @@
     "allow": [
       "Bash(npx next:*)",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''api/routes.py''\\).read\\(\\)\\); print\\(''routes.py: OK''\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\(''api/dependencies.py''\\).read\\(\\)\\); print\\(''dependencies.py: OK''\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''api/dependencies.py''\\).read\\(\\)\\); print\\(''dependencies.py: OK''\\)\")",
+      "Bash(curl:*)",
+      "Bash(docker compose:*)",
+      "Bash(python -c \":*)",
+      "Bash(source venv/Scripts/activate)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 28216 //F)",
+      "Bash(taskkill //PID 20184 //F)"
     ]
   }
 }

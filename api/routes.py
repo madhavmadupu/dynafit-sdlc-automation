@@ -245,13 +245,17 @@ async def _run_pipeline_background(run_id: str, state: dict, config: dict):
             await _emit_event(run_id, {"type": "pipeline_complete", "status": "COMPLETED"})
 
     except Exception as e:
-        log.error("pipeline_background_error", run_id=run_id, error=str(e), exc_info=True)
+        error_msg = str(e)
+        try:
+            log.error("pipeline_background_error", run_id=run_id, error=error_msg)
+        except Exception:
+            print(f"[PIPELINE ERROR] run_id={run_id} error={error_msg}")
         run_progress[run_id]["status"] = "FAILED"
         try:
             await postgres_client.update_run_status(run_id, RunStatus.FAILED)
         except Exception:
             pass
-        await _emit_event(run_id, {"type": "pipeline_error", "message": str(e)})
+        await _emit_event(run_id, {"type": "pipeline_error", "message": error_msg})
 
     finally:
         await _emit_event(run_id, {"type": "done"})
@@ -346,6 +350,11 @@ async def stream_run_progress(run_id: str):
             progress = run_progress.get(run_id)
             if progress:
                 yield f"data: {json.dumps({'type': 'state', **progress})}\n\n"
+
+                # If pipeline already finished, send done immediately
+                if progress.get("status") in ("COMPLETED", "FAILED", "AWAITING_REVIEW"):
+                    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                    return
 
             while True:
                 try:
