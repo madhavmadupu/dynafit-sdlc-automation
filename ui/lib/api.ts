@@ -75,11 +75,11 @@ class DynafitAPI {
     runId: string,
     handlers: {
       onPhaseStart?: (phase: string) => void;
-      onPhaseComplete?: (phase: string, stats: Record<string, any>) => void;
+      onPhaseComplete?: (phase: string, stats: Record<string, unknown>) => void;
       onPipelinePaused?: (message: string) => void;
       onPipelineComplete?: () => void;
       onPipelineError?: (message: string) => void;
-      onState?: (state: any) => void;
+      onState?: (state: unknown) => void;
     }
   ): EventSource {
     const es = new EventSource(
@@ -139,15 +139,15 @@ class DynafitAPI {
     run_id: string;
     status: string;
     current_phase: string | null;
-    phases: Record<string, { status: string; stats: Record<string, any> }>;
+    phases: Record<string, { status: string; stats: Record<string, unknown> }>;
   }> {
     return this.request(`/api/v1/runs/${runId}/status`);
   }
 
   async getRunResults(runId: string): Promise<{
     run_id: string;
-    atoms: any[];
-    classificationResults: any[];
+    atoms: unknown[];
+    classificationResults: unknown[];
     llmCostUsd: number;
     humanReviewRequired: string[];
   }> {
@@ -156,11 +156,11 @@ class DynafitAPI {
 
   // ── Human Review ──────────────────────────────────────────────────────
 
-  async getReviewItems(runId: string): Promise<any> {
+  async getReviewItems(runId: string): Promise<unknown> {
     return this.request(`/api/v1/runs/${runId}/review`);
   }
 
-  async submitReview(runId: string, payload: any): Promise<any> {
+  async submitReview(runId: string, payload: Record<string, unknown>): Promise<unknown> {
     return this.request(`/api/v1/runs/${runId}/review`, {
       method: "PATCH",
       body: JSON.stringify(payload),
