@@ -3,6 +3,7 @@ core/config/settings.py
 Environment-driven configuration for DYNAFIT.
 All external configuration accessed through this singleton — never use os.environ directly.
 """
+
 from __future__ import annotations
 
 from pydantic import Field
@@ -96,9 +97,7 @@ class DynafitSettings(BaseSettings):
     )
 
     # ── Pipeline Behaviour ────────────────────────────────────────────────────
-    BATCH_SIZE: int = Field(
-        default=50, description="Number of requirements per processing batch"
-    )
+    BATCH_SIZE: int = Field(default=50, description="Number of requirements per processing batch")
     MAX_INGESTION_RETRIES: int = Field(
         default=2, description="Max re-extraction retries for rejected atoms"
     )
@@ -111,9 +110,7 @@ class DynafitSettings(BaseSettings):
     RETRIEVAL_TOP_K_SOURCES: int = Field(
         default=20, description="Top-K per source before RRF fusion"
     )
-    RERANKER_TOP_K: int = Field(
-        default=5, description="Final top-K after CrossEncoder reranking"
-    )
+    RERANKER_TOP_K: int = Field(default=5, description="Final top-K after CrossEncoder reranking")
     MS_LEARN_TOP_K: int = Field(default=10, description="Top-K from MS Learn before RRF")
     EMBEDDING_MODEL: str = Field(
         default="BAAI/bge-large-en-v1.5", description="Embedding model for requirement vectors"
@@ -142,9 +139,7 @@ class DynafitSettings(BaseSettings):
     )
 
     # ── Observability ──────────────────────────────────────────────────────────
-    METRICS_PORT: int = Field(
-        default=9090, description="Prometheus metrics exposure port"
-    )
+    METRICS_PORT: int = Field(default=9090, description="Prometheus metrics exposure port")
     LOG_LEVEL: str = Field(default="INFO")
 
 

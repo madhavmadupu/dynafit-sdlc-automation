@@ -3,6 +3,7 @@ agents/classification/agent.py
 Phase 4 — Classification Agent LangGraph node.
 Classifies each atom as FIT | PARTIAL_FIT | GAP using route-aware processing.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -52,8 +53,6 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
     # Build lookup maps
     match_by_atom: dict[str, MatchResult] = {str(m.atom_id): m for m in match_results}
     context_by_atom: dict[str, RetrievalContext] = {str(c.atom_id): c for c in contexts}
-    atom_by_id: dict[str, RequirementAtom] = {str(a.id): a for a in atoms}
-
     # ── Cost pre-flight check ─────────────────────────────────────────────────
     await run_preflight_cost_check(
         match_results=match_results,
@@ -64,6 +63,7 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
     # ── Classify each atom ────────────────────────────────────────────────────
     # Process in parallel batches of settings.BATCH_SIZE
     from core.config.settings import settings
+
     batch_size = settings.BATCH_SIZE
 
     results: list[ClassificationResult] = []
@@ -84,7 +84,7 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
         ]
         outcomes = await asyncio.gather(*batch_tasks, return_exceptions=True)
 
-        for atom, outcome in zip(batch, outcomes):
+        for atom, outcome in zip(batch, outcomes, strict=True):
             if isinstance(outcome, Exception):
                 log.error(
                     f"{PHASE}.atom_failed",
@@ -92,11 +92,13 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
                     atom_id=str(atom.id),
                     error=str(outcome),
                 )
-                errors.append({
-                    "phase": PHASE,
-                    "atom_id": str(atom.id),
-                    "error": str(outcome),
-                })
+                errors.append(
+                    {
+                        "phase": PHASE,
+                        "atom_id": str(atom.id),
+                        "error": str(outcome),
+                    }
+                )
             else:
                 classified_result, atom_cost = outcome
                 results.append(classified_result)
@@ -164,8 +166,9 @@ async def _classify_single(
         context=context,
         run_id=run_id,
     )
-    from infrastructure.llm.client import _calculate_cost
     from core.config.settings import settings
+    from infrastructure.llm.client import _calculate_cost
+
     atom_cost = _calculate_cost(
         model=settings.CLASSIFICATION_MODEL,
         prompt_tokens=result.prompt_tokens,

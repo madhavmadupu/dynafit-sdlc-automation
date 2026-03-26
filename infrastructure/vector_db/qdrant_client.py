@@ -3,6 +3,7 @@ infrastructure/vector_db/qdrant_client.py
 Async Qdrant client for D365 capability KB and MS Learn corpus searches.
 Manages two collections: d365_capabilities and ms_learn_docs.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -10,8 +11,8 @@ from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as qmodels
 
 from core.config.settings import settings
-from core.schemas.retrieval_context import D365CapabilityMatch, DocChunkMatch
 from core.schemas.enums import D365Module
+from core.schemas.retrieval_context import D365CapabilityMatch, DocChunkMatch
 
 log = structlog.get_logger()
 
@@ -139,7 +140,12 @@ class DynafitQdrantClient:
             log.warning("ms_learn_retrieval_failed", error=str(e))
             return []  # MS Learn failure is soft
 
-    async def upsert_capability(self, capability_id: str, payload: dict, vector: list[float]) -> None:
+    async def upsert_capability(
+        self,
+        capability_id: str,
+        payload: dict,
+        vector: list[float],
+    ) -> None:
         """Upsert a single capability. Used by KB ingestion scripts only."""
         await self._client.upsert(
             collection_name=settings.D365_KB_COLLECTION,
@@ -174,9 +180,7 @@ class DynafitQdrantClient:
             return False
 
     @staticmethod
-    def _scored_point_to_capability(
-        point: object, bm25: bool = False
-    ) -> D365CapabilityMatch:
+    def _scored_point_to_capability(point: object, bm25: bool = False) -> D365CapabilityMatch:
         """Convert a Qdrant ScoredPoint to a D365CapabilityMatch."""
         payload = getattr(point, "payload", {}) or {}
         score = float(getattr(point, "score", 0.0))
@@ -197,7 +201,7 @@ class DynafitQdrantClient:
             localization_gaps=payload.get("localization_gaps", {}),
             bm25_score=score if bm25 else 0.0,
             vector_score=score if not bm25 else 0.0,
-            rrf_score=0.0,   # Set during RRF fusion
+            rrf_score=0.0,  # Set during RRF fusion
             rerank_score=0.0,  # Set during CrossEncoder reranking
         )
 

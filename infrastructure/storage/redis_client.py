@@ -3,10 +3,11 @@ infrastructure/storage/redis_client.py
 Redis client for RetrievalContext caching and rate limiting.
 TTL: 24 hours. Key: "retrieval:{atom_hash}:{kb_version}"
 """
+
 from __future__ import annotations
 
-import structlog
 import redis.asyncio as aioredis
+import structlog
 
 from core.config.settings import settings
 from core.schemas.retrieval_context import RetrievalContext
@@ -89,9 +90,7 @@ class DynafitRedisClient:
         except Exception as e:
             log.warning("redis_set_failed", key=key, error=str(e))
 
-    async def increment_rate_limit(
-        self, api_key: str, window: str, max_value: int
-    ) -> int:
+    async def increment_rate_limit(self, api_key: str, window: str, max_value: int) -> int:
         """
         Increment rate limit counter for an API key.
 

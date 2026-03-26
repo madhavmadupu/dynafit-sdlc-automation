@@ -3,6 +3,7 @@ agents/retrieval/rrf_fusion.py
 Reciprocal Rank Fusion (RRF) for merging vector and BM25 ranked lists.
 k=60 is ADR-001 locked — do not change without ADR + eval regression test.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict

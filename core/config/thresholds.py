@@ -3,6 +3,7 @@ core/config/thresholds.py
 Single source of truth for all confidence thresholds and routing cut-offs.
 NEVER hardcode these values in agent logic — always import from here.
 """
+
 from __future__ import annotations
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -11,36 +12,28 @@ from __future__ import annotations
 THRESHOLDS: dict[str, float] = {
     # FAST_TRACK: composite >= this AND exact history match → skip LLM, auto-FIT
     "fast_track_fit": 0.85,
-
     # SOFT_GAP: composite < this AND no history AND no candidates → skip LLM, auto-GAP
     "soft_gap": 0.40,
-
     # Confidence band boundaries
-    "confidence_high_lower": 0.70,   # composite >= 0.70 → HIGH band
-    "confidence_med_lower": 0.40,    # composite 0.40-0.69 → MED band
+    "confidence_high_lower": 0.70,  # composite >= 0.70 → HIGH band
+    "confidence_med_lower": 0.40,  # composite 0.40-0.69 → MED band
     # composite < 0.40 → LOW band
-
     # ─────────────────────────────────────────────────────────────────────────
     # Sanity check thresholds (Phase 4 post-classification)
     # ─────────────────────────────────────────────────────────────────────────
     # Flag for human review if composite score high but LLM said GAP
     "sanity_high_score_gap": 0.80,
-
     # Flag for human review if composite score low but LLM said FIT
     "sanity_low_score_fit": 0.35,
-
     # Flag if |llm_confidence - composite_score| > this → divergence flag
     "sanity_confidence_divergence": 0.40,
-
     # ─────────────────────────────────────────────────────────────────────────
     # Ingestion quality thresholds (Phase 1)
     # ─────────────────────────────────────────────────────────────────────────
     # Hard reject atoms below this completeness score
     "completeness_reject": 20.0,
-
     # Soft flag (needs_review) for atoms in this range
     "completeness_flag": 40.0,
-
     # ─────────────────────────────────────────────────────────────────────────
     # Historical fitment thresholds (Phase 2)
     # ─────────────────────────────────────────────────────────────────────────

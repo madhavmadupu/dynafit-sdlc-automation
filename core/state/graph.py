@@ -3,6 +3,7 @@ core/state/graph.py
 LangGraph StateGraph definition and compilation.
 The pipeline: Ingestion → Retrieval → Matching → Classification → [interrupt] → Validation
 """
+
 from __future__ import annotations
 
 import structlog
@@ -44,10 +45,10 @@ def build_graph(checkpointer=None) -> object:
             graph = build_graph(checkpointer=saver)
     """
     # Import agent run functions here to avoid circular imports
-    from agents.ingestion import agent as ingestion_agent
-    from agents.retrieval import agent as retrieval_agent
-    from agents.matching import agent as matching_agent
     from agents.classification import agent as classification_agent
+    from agents.ingestion import agent as ingestion_agent
+    from agents.matching import agent as matching_agent
+    from agents.retrieval import agent as retrieval_agent
     from agents.validation import agent as validation_agent
 
     if checkpointer is None:
@@ -80,5 +81,14 @@ def build_graph(checkpointer=None) -> object:
         interrupt_before=["validation"],
     )
 
-    log.info("graph.compiled", nodes=["ingestion", "retrieval", "matching", "classification", "validation"])
+    log.info(
+        "graph.compiled",
+        nodes=[
+            "ingestion",
+            "retrieval",
+            "matching",
+            "classification",
+            "validation",
+        ],
+    )
     return compiled

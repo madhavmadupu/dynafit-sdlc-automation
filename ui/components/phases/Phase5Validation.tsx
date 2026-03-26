@@ -78,8 +78,8 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
           exportReady: "true",
         });
       }
-    } catch (e: any) {
-      setSubmitError(e.message || "Failed to submit review");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Failed to submit review");
       // Revert validation phase back to idle
       useDynafitStore.getState().setPhaseStatus("validation", "idle");
     } finally {
@@ -99,9 +99,9 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
         a.download = "fitment_matrix.xlsx";
         a.click();
         URL.revokeObjectURL(url);
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("Export failed:", e);
-        alert(e.message || "Export failed — file may not be generated yet.");
+        alert(e instanceof Error ? e.message : "Export failed — file may not be generated yet.");
       } finally {
         setExporting(false);
       }

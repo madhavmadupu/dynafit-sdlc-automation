@@ -9,6 +9,7 @@ FastAPI endpoints for DYNAFIT pipeline orchestration.
 - PATCH /runs/{id}/review Submit consultant overrides & resume validation
 - GET  /runs/{id}/export  Download fitment_matrix.xlsx
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -16,13 +17,14 @@ import json
 import os
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import structlog
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
+from langgraph.checkpoint.memory import MemorySaver
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
 
 from api.dependencies import verify_api_key
 from core.config.settings import settings
@@ -30,8 +32,6 @@ from core.schemas.enums import RunStatus
 from core.state.graph import build_graph
 from core.state.requirement_state import make_initial_state
 from infrastructure.storage.postgres_client import postgres_client
-
-from langgraph.checkpoint.memory import MemorySaver
 
 log = structlog.get_logger()
 router = APIRouter()
@@ -45,14 +45,15 @@ os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
 
 # ── In-memory progress tracking ────────────────────────────────────────────
 # Maps run_id -> current progress state
-run_progress: Dict[str, Dict[str, Any]] = {}
+run_progress: dict[str, dict[str, Any]] = {}
 # Maps run_id -> list of asyncio.Queue for SSE subscribers
-run_subscribers: Dict[str, list] = defaultdict(list)
+run_subscribers: dict[str, list] = defaultdict(list)
 
 PHASE_ORDER = ["ingestion", "retrieval", "matching", "classification", "validation"]
 
 
 # ── Pydantic Models ────────────────────────────────────────────────────────
+
 
 class RunResponse(BaseModel):
     run_id: str
@@ -73,7 +74,7 @@ class ReviewListResponse(BaseModel):
     run_id: str
     status: str
     needs_review_count: int
-    items: List[ReviewItem]
+    items: list[ReviewItem]
 
 
 class ConsultantDecisionInput(BaseModel):
@@ -84,12 +85,13 @@ class ConsultantDecisionInput(BaseModel):
 
 
 class ReviewSubmitRequest(BaseModel):
-    decisions: List[ConsultantDecisionInput]
+    decisions: list[ConsultantDecisionInput]
 
 
 # ── SSE Helpers ─────────────────────────────────────────────────────────────
 
-async def _emit_event(run_id: str, event: dict):
+
+async def _emit_event(run_id: str, event: dict) -> None:
     """Send event to all SSE subscribers for this run."""
     for queue in run_subscribers.get(run_id, []):
         try:
@@ -108,17 +110,16 @@ def _safe_attr(obj, attr, default=None):
 
 def _build_phase_stats(node_name: str, node_output: dict) -> dict:
     """Extract frontend-friendly stats from a pipeline node's output."""
-    stats: Dict[str, Any] = {}
+    stats: dict[str, Any] = {}
 
     if node_name == "ingestion":
         atoms = node_output.get("atoms", [])
         stats = {
             "totalAtoms": len(atoms),
-            "modules": len(set(_safe_attr(a, "module", "UNKNOWN") for a in atoms)) if atoms else 0,
+            "modules": len({_safe_attr(a, "module", "UNKNOWN") for a in atoms}) if atoms else 0,
             "ambiguous": sum(1 for a in atoms if getattr(a, "needs_review", False)),
             "duplicates": sum(
-                1 for a in atoms
-                if str(_safe_attr(a, "status", "")).upper() == "DUPLICATE"
+                1 for a in atoms if str(_safe_attr(a, "status", "")).upper() == "DUPLICATE"
             ),
         }
 
@@ -133,8 +134,12 @@ def _build_phase_stats(node_name: str, node_output: dict) -> dict:
 
     elif node_name == "matching":
         results = node_output.get("match_results", [])
-        fast_track = sum(1 for r in results if str(_safe_attr(r, "route_decision", "")).upper() == "FAST_TRACK")
-        soft_gap = sum(1 for r in results if str(_safe_attr(r, "route_decision", "")).upper() == "SOFT_GAP")
+        fast_track = sum(
+            1 for r in results if str(_safe_attr(r, "route_decision", "")).upper() == "FAST_TRACK"
+        )
+        soft_gap = sum(
+            1 for r in results if str(_safe_attr(r, "route_decision", "")).upper() == "SOFT_GAP"
+        )
         llm_count = len(results) - fast_track - soft_gap
         avg = sum(getattr(r, "composite_score", 0) for r in results) / max(len(results), 1)
         stats = {
@@ -147,7 +152,9 @@ def _build_phase_stats(node_name: str, node_output: dict) -> dict:
     elif node_name == "classification":
         results = node_output.get("classification_results", [])
         fit = sum(1 for r in results if str(_safe_attr(r, "verdict", "")).upper() == "FIT")
-        partial = sum(1 for r in results if str(_safe_attr(r, "verdict", "")).upper() == "PARTIAL_FIT")
+        partial = sum(
+            1 for r in results if str(_safe_attr(r, "verdict", "")).upper() == "PARTIAL_FIT"
+        )
         gap = sum(1 for r in results if str(_safe_attr(r, "verdict", "")).upper() == "GAP")
         avg_conf = sum(getattr(r, "confidence", 0) for r in results) / max(len(results), 1)
         stats = {
@@ -175,7 +182,8 @@ def _build_phase_stats(node_name: str, node_output: dict) -> dict:
 
 # ── Background Pipeline Execution ──────────────────────────────────────────
 
-async def _run_pipeline_background(run_id: str, state: dict, config: dict):
+
+async def _run_pipeline_background(run_id: str, state: dict, config: dict) -> None:
     """Execute the LangGraph pipeline in background, emitting SSE progress events."""
     try:
         run_progress[run_id] = {
@@ -198,11 +206,14 @@ async def _run_pipeline_background(run_id: str, state: dict, config: dict):
                 run_progress[run_id]["phases"][node_name]["status"] = "completed"
                 run_progress[run_id]["phases"][node_name]["stats"] = stats
 
-                await _emit_event(run_id, {
-                    "type": "phase_complete",
-                    "phase": node_name,
-                    "stats": stats,
-                })
+                await _emit_event(
+                    run_id,
+                    {
+                        "type": "phase_complete",
+                        "phase": node_name,
+                        "stats": stats,
+                    },
+                )
 
                 # Start next phase (but NOT validation — it's gated by interrupt_before)
                 idx = PHASE_ORDER.index(node_name)
@@ -219,7 +230,7 @@ async def _run_pipeline_background(run_id: str, state: dict, config: dict):
         # Pipeline finished (or paused at interrupt_before=['validation'])
         config_check = {"configurable": {"thread_id": run_id}}
         state_snapshot = await graph.aget_state(config_check)
-        has_review = bool(state_snapshot.values.get("human_review_required"))
+        bool(state_snapshot.values.get("human_review_required"))
 
         # Check if validation actually ran (interrupt_before would prevent it)
         validation_ran = run_progress[run_id]["phases"]["validation"]["status"] == "completed"
@@ -234,11 +245,14 @@ async def _run_pipeline_background(run_id: str, state: dict, config: dict):
                 pass
 
             review_count = len(state_snapshot.values.get("human_review_required", []))
-            await _emit_event(run_id, {
-                "type": "pipeline_paused",
-                "status": "AWAITING_REVIEW",
-                "message": f"{review_count} items require consultant review.",
-            })
+            await _emit_event(
+                run_id,
+                {
+                    "type": "pipeline_paused",
+                    "status": "AWAITING_REVIEW",
+                    "message": f"{review_count} items require consultant review.",
+                },
+            )
         else:
             run_progress[run_id]["status"] = "COMPLETED"
             run_progress[run_id]["current_phase"] = None
@@ -267,21 +281,24 @@ async def _run_pipeline_background(run_id: str, state: dict, config: dict):
 
 # ── Serialization helpers ───────────────────────────────────────────────────
 
+
 def _serialize_atoms(atoms) -> list:
     """Convert backend RequirementAtom objects to frontend-friendly dicts."""
     result = []
     for a in atoms:
-        result.append({
-            "id": str(a.id),
-            "text": a.text,
-            "module": _safe_attr(a, "module", "UNKNOWN"),
-            "priority": _safe_attr(a, "priority", "SHOULD"),
-            "completenessScore": getattr(a, "completeness_score", 50),
-            "isAmbiguous": getattr(a, "needs_review", False),
-            "isDuplicate": str(_safe_attr(a, "status", "")).upper() == "DUPLICATE",
-            "sourceFile": getattr(a, "source_file", "") or "",
-            "sourceRow": None,
-        })
+        result.append(
+            {
+                "id": str(a.id),
+                "text": a.text,
+                "module": _safe_attr(a, "module", "UNKNOWN"),
+                "priority": _safe_attr(a, "priority", "SHOULD"),
+                "completenessScore": getattr(a, "completeness_score", 50),
+                "isAmbiguous": getattr(a, "needs_review", False),
+                "isDuplicate": str(_safe_attr(a, "status", "")).upper() == "DUPLICATE",
+                "sourceFile": getattr(a, "source_file", "") or "",
+                "sourceRow": None,
+            }
+        )
     return result
 
 
@@ -291,25 +308,28 @@ def _serialize_classifications(classification_results, atoms_by_id: dict) -> lis
     for r in classification_results:
         atom_id = str(r.atom_id)
         atom = atoms_by_id.get(atom_id, {})
-        result.append({
-            "requirementId": atom_id,
-            "requirementText": atom.get("text", ""),
-            "classification": _safe_attr(r, "verdict", "GAP"),
-            "confidence": getattr(r, "confidence", 0),
-            "rationale": getattr(r, "rationale", ""),
-            "d365Feature": getattr(r, "matched_capability", None),
-            "d365Module": atom.get("module"),
-            "configNotes": getattr(r, "config_needed", None),
-            "gapDescription": getattr(r, "gap_description", None),
-            "caveats": getattr(r, "caveats", None),
-        })
+        result.append(
+            {
+                "requirementId": atom_id,
+                "requirementText": atom.get("text", ""),
+                "classification": _safe_attr(r, "verdict", "GAP"),
+                "confidence": getattr(r, "confidence", 0),
+                "rationale": getattr(r, "rationale", ""),
+                "d365Feature": getattr(r, "matched_capability", None),
+                "d365Module": atom.get("module"),
+                "configNotes": getattr(r, "config_needed", None),
+                "gapDescription": getattr(r, "gap_description", None),
+                "caveats": getattr(r, "caveats", None),
+            }
+        )
     return result
 
 
 # ── Routes ──────────────────────────────────────────────────────────────────
 
+
 @router.post("/runs", response_model=RunResponse, dependencies=[Depends(verify_api_key)])
-async def create_run(files: List[UploadFile] = File(...)):
+async def create_run(files: list[UploadFile] = File(...)):
     """Upload files and start the pipeline in background. Returns immediately."""
     run_id = str(uuid4())
     saved_paths = []
@@ -363,7 +383,7 @@ async def stream_run_progress(run_id: str):
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=300)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
                     continue
 
@@ -449,7 +469,11 @@ async def export_fitment_matrix(run_id: str):
     )
 
 
-@router.get("/runs/{run_id}/review", response_model=ReviewListResponse, dependencies=[Depends(verify_api_key)])
+@router.get(
+    "/runs/{run_id}/review",
+    response_model=ReviewListResponse,
+    dependencies=[Depends(verify_api_key)],
+)
 async def get_review_items(run_id: str):
     """Get items flagged for human review."""
     config = {"configurable": {"thread_id": run_id}}
@@ -465,10 +489,7 @@ async def get_review_items(run_id: str):
     review_ids = state.get("human_review_required", [])
     if not review_ids:
         return ReviewListResponse(
-            run_id=run_id,
-            status="No review required",
-            needs_review_count=0,
-            items=[]
+            run_id=run_id, status="No review required", needs_review_count=0, items=[]
         )
 
     atoms = {str(a.id): a for a in state.get("atoms", [])}
@@ -493,11 +514,15 @@ async def get_review_items(run_id: str):
         run_id=run_id,
         status=RunStatus.AWAITING_REVIEW.value,
         needs_review_count=len(items),
-        items=items
+        items=items,
     )
 
 
-@router.patch("/runs/{run_id}/review", response_model=RunResponse, dependencies=[Depends(verify_api_key)])
+@router.patch(
+    "/runs/{run_id}/review",
+    response_model=RunResponse,
+    dependencies=[Depends(verify_api_key)],
+)
 async def submit_review(run_id: str, payload: ReviewSubmitRequest):
     """Submit human decisions and resume the pipeline (Phase 5 Validation)."""
     config = {"configurable": {"thread_id": run_id}}
@@ -509,9 +534,10 @@ async def submit_review(run_id: str, payload: ReviewSubmitRequest):
     if not state_tuple or not hasattr(state_tuple, "values"):
         raise HTTPException(status_code=404, detail="Run state not found")
 
+    from datetime import datetime
+
     from core.schemas.classification_result import ConsultantDecision
     from core.schemas.enums import Verdict
-    from datetime import datetime
 
     decisions = []
     results = {str(r.atom_id): r for r in state_tuple.values.get("classification_results", [])}
@@ -521,21 +547,22 @@ async def submit_review(run_id: str, payload: ReviewSubmitRequest):
         if not orig:
             continue
 
-        is_override = (orig.verdict.value.upper() != dec.verdict.upper())
+        is_override = orig.verdict.value.upper() != dec.verdict.upper()
 
         try:
-            decisions.append(ConsultantDecision(
-                atom_id=dec.atom_id,
-                verdict=Verdict(dec.verdict.upper()),
-                reason=dec.reason,
-                reviewed_by=dec.reviewed_by,
-                is_override=is_override,
-                reviewed_at=datetime.utcnow()
-            ))
+            decisions.append(
+                ConsultantDecision(
+                    atom_id=dec.atom_id,
+                    verdict=Verdict(dec.verdict.upper()),
+                    reason=dec.reason,
+                    reviewed_by=dec.reviewed_by,
+                    is_override=is_override,
+                    reviewed_at=datetime.utcnow(),
+                )
+            )
         except ValueError:
             raise HTTPException(
-                status_code=400,
-                detail=f"Invalid verdict for atom {dec.atom_id}: {dec.verdict}"
+                status_code=400, detail=f"Invalid verdict for atom {dec.atom_id}: {dec.verdict}"
             )
 
     try:
@@ -548,7 +575,7 @@ async def submit_review(run_id: str, payload: ReviewSubmitRequest):
             pass
 
         # Resume graph — validation node runs
-        final_state = await graph.ainvoke(None, config=config)
+        await graph.ainvoke(None, config=config)
 
         # Update progress tracking
         if run_id in run_progress:

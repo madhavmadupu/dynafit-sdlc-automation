@@ -24,9 +24,9 @@ export default function Navbar() {
         a.download = "fitment_matrix.xlsx";
         a.click();
         URL.revokeObjectURL(url);
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("Export failed:", e);
-        alert(e.message || "Export failed");
+        alert(e instanceof Error ? e.message : "Export failed");
       } finally {
         setExporting(false);
       }

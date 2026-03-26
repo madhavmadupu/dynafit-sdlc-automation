@@ -3,6 +3,7 @@ core/schemas/match_result.py
 Phase 3 output schema — semantic matching scores and routing decision.
 Flows into Phase 4 (Classification Agent).
 """
+
 from __future__ import annotations
 
 from uuid import UUID, uuid4
@@ -115,7 +116,7 @@ class MatchResult(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_routing_logic(self) -> "MatchResult":
+    def validate_routing_logic(self) -> MatchResult:
         """Ensure FAST_TRACK requires historical precedent."""
         if self.route_decision == RouteDecision.FAST_TRACK and not self.has_exact_history:
             raise ValueError("FAST_TRACK route requires has_exact_history=True")

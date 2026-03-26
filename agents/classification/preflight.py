@@ -3,14 +3,14 @@ agents/classification/preflight.py
 Cost guard for Phase 4. Must run before processing any atoms through the LLM.
 Aborts with an exception if projected cost would exceed MAX_LLM_COST_USD_PER_RUN.
 """
+
 from __future__ import annotations
 
 import structlog
 
 from core.config.settings import settings
-from core.schemas.match_result import MatchResult
 from core.schemas.enums import RouteDecision
-from infrastructure.llm.client import estimate_cost_for_batch
+from core.schemas.match_result import MatchResult
 
 log = structlog.get_logger()
 
@@ -59,6 +59,7 @@ async def run_preflight_cost_check(
 
     # Use Anthropic pricing for the classification model
     from infrastructure.llm.client import _calculate_cost
+
     estimated_additional_cost = _calculate_cost(
         model=settings.CLASSIFICATION_MODEL,
         prompt_tokens=estimated_prompt_tokens,

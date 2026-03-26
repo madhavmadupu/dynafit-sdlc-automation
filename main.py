@@ -2,6 +2,7 @@
 main.py
 Root entrypoint for running the DYNAFIT application.
 """
+
 import os
 import sys
 
@@ -15,11 +16,13 @@ if sys.platform == "win32":
         pass
 
 import uvicorn
+
 from api.server import create_app
 
 app = create_app()
 
-def main():
+
+def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "run":
         uvicorn.run(
             "main:app",
@@ -31,6 +34,7 @@ def main():
     else:
         print("Usage: python main.py run")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

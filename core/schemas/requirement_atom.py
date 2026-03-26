@@ -3,6 +3,7 @@ core/schemas/requirement_atom.py
 Primary unit of work flowing through the DYNAFIT pipeline.
 RequirementAtom is immutable (frozen=True) — never mutate after creation.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -43,11 +44,15 @@ class RequirementAtom(BaseModel):
     )
     priority: MoSCoW = Field(description="MoSCoW priority classification")
     intent: IntentType = Field(
-        description="Nature of the requirement (FUNCTIONAL, NFR, INTEGRATION, REPORTING, DATA_MIGRATION)"
+        description=(
+            "Nature of the requirement (FUNCTIONAL, NFR, INTEGRATION, REPORTING, DATA_MIGRATION)"
+        )
     )
     country: str | None = Field(
         default=None,
-        description="2-letter ISO country code if requirement is country-specific (e.g. 'IN', 'DE')",
+        description=(
+            "2-letter ISO country code if requirement is country-specific (e.g. 'IN', 'DE')"
+        ),
     )
     completeness_score: float = Field(
         ge=0.0,
@@ -55,7 +60,9 @@ class RequirementAtom(BaseModel):
         description="Quality score 0-100. <20=hard rejected, 20-40=soft flag, ≥40=acceptable",
     )
     source_ref: str = Field(
-        description="Origin document + location (e.g. 'brd.xlsx:row_42', 'requirements.docx:para_7')"
+        description=(
+            "Origin document + location (e.g. 'brd.xlsx:row_42', 'requirements.docx:para_7')"
+        )
     )
     source_file: str = Field(description="Source filename (basename only)", default="")
     needs_review: bool = Field(

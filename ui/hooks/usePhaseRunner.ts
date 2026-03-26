@@ -10,7 +10,7 @@ import {
   simulateClassification,
   simulateValidation,
 } from "@/lib/simulation";
-import type { PhaseKey, ValidatedFitment } from "@/types";
+import type { PhaseKey, ValidatedFitment, ClassificationResult } from "@/types";
 
 const PHASE_ORDER: PhaseKey[] = [
   "ingestion",
@@ -62,7 +62,7 @@ export function usePhaseRunner() {
 
           // Generate validated fitments from classifications
           const validated: ValidatedFitment[] =
-            results.classificationResults.map((c: any) => ({
+            results.classificationResults.map((c: ClassificationResult) => ({
               ...c,
               consultantVerified: false,
               conflictFlags: [],
@@ -223,17 +223,17 @@ export function usePhaseRunner() {
             setBackendRunId(result.run_id);
             connectStream(result.run_id);
             return;
-          } catch (e: any) {
+          } catch (e: unknown) {
             // Backend call failed — fall back to simulation gracefully
-            console.warn("Backend upload failed, falling back to simulation:", e.message);
+            console.warn("Backend upload failed, falling back to simulation:", e instanceof Error ? e.message : e);
             setHasBackend(false);
           }
         }
         // Simulation fallback
         await simulateIngestion();
         setIsRunning(false);
-      } catch (e: any) {
-        failPhase("ingestion", e.message || "Failed to start pipeline");
+      } catch (e: unknown) {
+        failPhase("ingestion", e instanceof Error ? e.message : "Failed to start pipeline");
         setIsRunning(false);
       }
     },

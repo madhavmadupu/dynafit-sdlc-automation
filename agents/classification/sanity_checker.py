@@ -3,6 +3,7 @@ agents/classification/sanity_checker.py
 Post-classification sanity rules. Flags results for human review.
 Applied after LLM classification — never changes the verdict, only sets needs_review.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -89,8 +90,6 @@ def check_result(
         )
 
     if flags and flags != list(result.sanity_flags):
-        return result.model_copy(
-            update={"needs_review": needs_review, "sanity_flags": flags}
-        )
+        return result.model_copy(update={"needs_review": needs_review, "sanity_flags": flags})
 
     return result

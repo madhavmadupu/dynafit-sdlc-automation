@@ -3,6 +3,7 @@ agents/matching/confidence_scorer.py
 Composite confidence scoring and Phase 3 → Phase 4 routing decision.
 Loads module-specific weights from YAML; falls back to global defaults.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,7 +12,7 @@ import structlog
 import yaml
 
 from core.config.thresholds import THRESHOLDS
-from core.schemas.enums import ConfidenceBand, D365Module, RouteDecision
+from core.schemas.enums import ConfidenceBand, RouteDecision
 from core.schemas.retrieval_context import HistoricalFitmentMatch
 
 log = structlog.get_logger()
@@ -100,11 +101,7 @@ def compute_composite_score(
     overlap_w = weights.get("overlap", DEFAULT_WEIGHTS["overlap"])
     history_w = weights.get("history", DEFAULT_WEIGHTS["history"])
 
-    composite = (
-        cosine_w * max_cosine
-        + overlap_w * max_overlap
-        + history_w * historical_weight
-    )
+    composite = cosine_w * max_cosine + overlap_w * max_overlap + history_w * historical_weight
     return max(0.0, min(1.0, composite))
 
 
@@ -148,9 +145,7 @@ def decide_route(
     """
     # Get module-specific thresholds
     module_thresholds = _load_module_thresholds(module)
-    fast_track_threshold = module_thresholds.get(
-        "fast_track_fit", THRESHOLDS["fast_track_fit"]
-    )
+    fast_track_threshold = module_thresholds.get("fast_track_fit", THRESHOLDS["fast_track_fit"])
     soft_gap_threshold = module_thresholds.get("soft_gap", THRESHOLDS["soft_gap"])
 
     # FAST_TRACK: high confidence + exact historical match

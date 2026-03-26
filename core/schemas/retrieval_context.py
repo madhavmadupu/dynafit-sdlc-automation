@@ -3,6 +3,7 @@ core/schemas/retrieval_context.py
 Phase 2 output schema — grounded evidence assembled for each RequirementAtom.
 Flows into Phase 3 (Semantic Matching Agent).
 """
+
 from __future__ import annotations
 
 from uuid import UUID, uuid4
@@ -74,9 +75,7 @@ class HistoricalFitmentMatch(BaseModel):
         le=1.0,
         description="Embedding similarity to current atom (1.0 = exact hash match)",
     )
-    is_exact_match: bool = Field(
-        default=False, description="True if atom_hash matched exactly"
-    )
+    is_exact_match: bool = Field(default=False, description="True if atom_hash matched exactly")
 
 
 class RetrievalContext(BaseModel):

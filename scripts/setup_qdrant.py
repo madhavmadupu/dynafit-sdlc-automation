@@ -3,6 +3,7 @@ scripts/setup_qdrant.py
 Idempotent collection creation for Qdrant (D365 Capabilities & MS Learn).
 Defines payload indices for exact and full-text matching.
 """
+
 from __future__ import annotations
 
 import os
@@ -13,7 +14,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import structlog
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Distance, VectorParams, PayloadSchemaType, TextIndexParams, TextIndexType, TokenizerType
+from qdrant_client.models import (
+    Distance,
+    PayloadSchemaType,
+    TextIndexParams,
+    TextIndexType,
+    TokenizerType,
+    VectorParams,
+)
 
 from core.config.settings import settings
 
@@ -40,7 +48,7 @@ async def setup_qdrant() -> None:
     # 1. D365 Capabilities Hybrid Collection
     cap_coll = settings.D365_KB_COLLECTION
     if cap_coll not in existing:
-        log.info(f"setup.creating_collection", collection=cap_coll)
+        log.info("setup.creating_collection", collection=cap_coll)
         await client.create_collection(
             collection_name=cap_coll,
             vectors_config=VectorParams(
@@ -69,12 +77,12 @@ async def setup_qdrant() -> None:
             ),
         )
     else:
-        log.info(f"setup.collection_exists", collection=cap_coll)
+        log.info("setup.collection_exists", collection=cap_coll)
 
     # 2. MS Learn Documents Collection (Dense Only)
     msl_coll = settings.MS_LEARN_COLLECTION
     if msl_coll not in existing:
-        log.info(f"setup.creating_collection", collection=msl_coll)
+        log.info("setup.creating_collection", collection=msl_coll)
         await client.create_collection(
             collection_name=msl_coll,
             vectors_config=VectorParams(
@@ -83,11 +91,12 @@ async def setup_qdrant() -> None:
             ),
         )
     else:
-        log.info(f"setup.collection_exists", collection=msl_coll)
+        log.info("setup.collection_exists", collection=msl_coll)
 
     log.info("setup.qdrant_setup_complete")
 
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(setup_qdrant())

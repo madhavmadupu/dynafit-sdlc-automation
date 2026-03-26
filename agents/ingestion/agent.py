@@ -3,6 +3,7 @@ agents/ingestion/agent.py
 Phase 1 — Ingestion Agent LangGraph node.
 Transforms raw document files into structured RequirementAtom objects.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -66,11 +67,13 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
                 error=str(e),
                 exc_info=True,
             )
-            ingestion_errors.append({
-                "phase": PHASE,
-                "file": file_path,
-                "error": str(e),
-            })
+            ingestion_errors.append(
+                {
+                    "phase": PHASE,
+                    "file": file_path,
+                    "error": str(e),
+                }
+            )
 
     # ── Phase 1c: Normalize ───────────────────────────────────────────────────
     normalized = normalize_atoms(all_partial_atoms)
@@ -81,7 +84,9 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
     # Retry rejected atoms (max MAX_INGESTION_RETRIES times)
     if rejected_atoms:
         for retry_attempt in range(1, settings.MAX_INGESTION_RETRIES + 1):
-            retry_rejected = [r for r in rejected_atoms if "Schema validation" not in r.rejection_reason]
+            retry_rejected = [
+                r for r in rejected_atoms if "Schema validation" not in r.rejection_reason
+            ]
             if not retry_rejected:
                 break
 
@@ -96,6 +101,7 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
             for rejected in retry_rejected:
                 # Re-extract with rejection reason in prompt
                 from agents.ingestion.doc_parser import RawChunk
+
                 mock_chunk = RawChunk(
                     text=rejected.raw_text,
                     source_ref=rejected.source_ref,

@@ -3,6 +3,7 @@ agents/retrieval/parallel_retriever.py
 Fans out retrieval to all 3 knowledge sources simultaneously via asyncio.gather().
 Sequential retrieval is a performance violation — always parallel.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -12,9 +13,13 @@ import structlog
 
 from agents.retrieval.query_builder import RetrievalQuery
 from core.config.settings import settings
-from core.schemas.retrieval_context import D365CapabilityMatch, DocChunkMatch, HistoricalFitmentMatch
-from infrastructure.vector_db.qdrant_client import qdrant_client
+from core.schemas.retrieval_context import (
+    D365CapabilityMatch,
+    DocChunkMatch,
+    HistoricalFitmentMatch,
+)
 from infrastructure.vector_db.pgvector_client import pgvector_client
+from infrastructure.vector_db.qdrant_client import qdrant_client
 
 log = structlog.get_logger()
 
@@ -31,9 +36,7 @@ class ParallelRetriever:
     If pgvector fails — soft warning (empty list returned, pipeline continues).
     """
 
-    async def retrieve_all(
-        self, query: RetrievalQuery, module: str
-    ) -> dict[str, Any]:
+    async def retrieve_all(self, query: RetrievalQuery, module: str) -> dict[str, Any]:
         """
         Fan out all 3 retrieval sources simultaneously.
 
@@ -48,21 +51,16 @@ class ParallelRetriever:
         sources_available: list[str] = []
 
         # Run all 3 sources in parallel
-        cap_task = asyncio.create_task(
-            self._retrieve_capabilities_dense(query, module)
-        )
-        bm25_task = asyncio.create_task(
-            self._retrieve_capabilities_bm25(query, module)
-        )
-        ms_learn_task = asyncio.create_task(
-            self._retrieve_ms_learn(query)
-        )
-        history_task = asyncio.create_task(
-            self._retrieve_historical(query, module)
-        )
+        cap_task = asyncio.create_task(self._retrieve_capabilities_dense(query, module))
+        bm25_task = asyncio.create_task(self._retrieve_capabilities_bm25(query, module))
+        ms_learn_task = asyncio.create_task(self._retrieve_ms_learn(query))
+        history_task = asyncio.create_task(self._retrieve_historical(query, module))
 
         cap_result, bm25_result, ms_learn_result, history_result = await asyncio.gather(
-            cap_task, bm25_task, ms_learn_task, history_task,
+            cap_task,
+            bm25_task,
+            ms_learn_task,
+            history_task,
             return_exceptions=True,
         )
 
@@ -87,7 +85,11 @@ class ParallelRetriever:
 
         # MS Learn soft failure
         if isinstance(ms_learn_result, Exception):
-            log.warning("ms_learn_retrieval_failed", atom_id=query.atom_id, error=str(ms_learn_result))
+            log.warning(
+                "ms_learn_retrieval_failed",
+                atom_id=query.atom_id,
+                error=str(ms_learn_result),
+            )
             ms_learn_docs: list[DocChunkMatch] = []
         else:
             ms_learn_docs = ms_learn_result
@@ -96,7 +98,11 @@ class ParallelRetriever:
 
         # Historical soft failure
         if isinstance(history_result, Exception):
-            log.warning("historical_retrieval_failed", atom_id=query.atom_id, error=str(history_result))
+            log.warning(
+                "historical_retrieval_failed",
+                atom_id=query.atom_id,
+                error=str(history_result),
+            )
             historical: list[HistoricalFitmentMatch] = []
         else:
             historical = history_result

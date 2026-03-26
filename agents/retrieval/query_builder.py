@@ -3,9 +3,10 @@ agents/retrieval/query_builder.py
 Transforms RequirementAtom objects into multi-modal retrieval queries.
 Produces dense vectors, BM25 sparse tokens, and module-scoped SQL filters.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import structlog
 
@@ -16,12 +17,56 @@ log = structlog.get_logger()
 
 # D365-specific stopwords to exclude from BM25 tokenization
 D365_STOPWORDS = {
-    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-    "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
-    "system", "user", "must", "shall", "should", "will", "would", "can",
-    "may", "might", "need", "needs", "have", "has", "had", "do", "does",
-    "allow", "enable", "support", "provide", "ensure", "include", "access",
-    "ability", "function", "functionality", "feature", "capability",
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "system",
+    "user",
+    "must",
+    "shall",
+    "should",
+    "will",
+    "would",
+    "can",
+    "may",
+    "might",
+    "need",
+    "needs",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "allow",
+    "enable",
+    "support",
+    "provide",
+    "ensure",
+    "include",
+    "access",
+    "ability",
+    "function",
+    "functionality",
+    "feature",
+    "capability",
 }
 
 
@@ -31,10 +76,10 @@ class RetrievalQuery:
 
     atom_id: str
     atom_hash: str
-    dense_vector: list[float]          # bge-large-en-v1.5 embedding
-    sparse_tokens: list[str]           # BM25 tokens (lowercased, no stopwords)
-    module_filter: str                 # D365 module code for Qdrant filter
-    country_filter: str | None         # Optional country code filter
+    dense_vector: list[float]  # bge-large-en-v1.5 embedding
+    sparse_tokens: list[str]  # BM25 tokens (lowercased, no stopwords)
+    module_filter: str  # D365 module code for Qdrant filter
+    country_filter: str | None  # Optional country code filter
 
 
 class QueryBuilder:

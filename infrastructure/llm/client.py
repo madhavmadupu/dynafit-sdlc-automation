@@ -4,10 +4,11 @@ The ONLY entry point for all LLM calls in DYNAFIT.
 Enforces retry, token counting, cost tracking, and LangSmith tracing.
 NEVER call the Anthropic SDK directly — always use llm_call().
 """
+
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import structlog
 from tenacity import (
@@ -136,6 +137,7 @@ async def llm_call(
         if settings.LANGCHAIN_API_KEY:
             try:
                 import langsmith
+
                 ls_client = langsmith.Client(api_key=settings.LANGCHAIN_API_KEY)
                 # Create a run — gracefully degrade if LangSmith is down
                 ls_run = ls_client.create_run(
@@ -148,12 +150,12 @@ async def llm_call(
             except Exception as ls_err:
                 log.warning("langsmith_trace_init_failed", error=str(ls_err))
 
-        create_kwargs: dict = dict(
-            model=model,
-            messages=filtered_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        create_kwargs: dict = {
+            "model": model,
+            "messages": filtered_messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
         if system_message:
             create_kwargs["system"] = system_message
 
@@ -209,7 +211,13 @@ async def llm_call(
         log.warning("llm_call.server_error", model=model, run_id=run_id, error=str(e))
         raise LLMServerError(str(e)) from e
     except Exception as e:
-        log.error("llm_call.unexpected_error", model=model, run_id=run_id, error=str(e), exc_info=True)
+        log.error(
+            "llm_call.unexpected_error",
+            model=model,
+            run_id=run_id,
+            error=str(e),
+            exc_info=True,
+        )
         raise
 
 

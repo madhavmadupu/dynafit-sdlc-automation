@@ -3,12 +3,13 @@ core/schemas/classification_result.py
 Phase 4 and Phase 5 output schemas.
 ClassificationResult is the core decision object; ValidatedFitmentBatch is the final output.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.schemas.enums import RouteDecision, RunStatus, Verdict
 
@@ -26,9 +27,7 @@ class ClassificationResult(BaseModel):
 
     # Core verdict
     verdict: Verdict = Field(description="FIT | PARTIAL_FIT | GAP")
-    confidence: float = Field(
-        ge=0.0, le=1.0, description="LLM self-reported confidence (0.0-1.0)"
-    )
+    confidence: float = Field(ge=0.0, le=1.0, description="LLM self-reported confidence (0.0-1.0)")
 
     # Supporting evidence
     matched_capability: str | None = Field(

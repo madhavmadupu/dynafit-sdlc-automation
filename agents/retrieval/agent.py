@@ -3,6 +3,7 @@ agents/retrieval/agent.py
 Phase 2 — Knowledge Retrieval Agent (RAG) LangGraph node.
 Reads atoms, writes retrieval_contexts with grounded D365 evidence.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -67,7 +68,7 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
     contexts: list[RetrievalContext] = []
     errors: list[dict] = []
 
-    for atom, outcome in zip(atoms, outcomes):
+    for atom, outcome in zip(atoms, outcomes, strict=False):
         if isinstance(outcome, Exception):
             log.error(
                 f"{PHASE}.atom_failed",
@@ -76,11 +77,13 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
                 error=str(outcome),
                 exc_info=False,
             )
-            errors.append({
-                "phase": PHASE,
-                "atom_id": str(atom.id),
-                "error": str(outcome),
-            })
+            errors.append(
+                {
+                    "phase": PHASE,
+                    "atom_id": str(atom.id),
+                    "error": str(outcome),
+                }
+            )
         else:
             contexts.append(outcome)
 

@@ -3,6 +3,7 @@ agents/validation/report_generator.py
 Phase 5 Excel Generator.
 Transforms ValidatedFitmentBatch into fitment_matrix.xlsx.
 """
+
 from __future__ import annotations
 
 import os
@@ -10,22 +11,21 @@ from datetime import datetime
 from pathlib import Path
 
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
-
 import structlog
+from openpyxl.styles import Alignment, Font, PatternFill
 
 from core.config.settings import settings
 from core.schemas.classification_result import ValidatedFitmentBatch
-from core.schemas.requirement_atom import RequirementAtom
 from core.schemas.enums import Verdict
+from core.schemas.requirement_atom import RequirementAtom
 
 log = structlog.get_logger()
 
 # Cell coloring map for quick scanning
 VERDICT_COLORS = {
-    Verdict.FIT: "C6EFCE",          # Light Green
+    Verdict.FIT: "C6EFCE",  # Light Green
     Verdict.PARTIAL_FIT: "FFEB9C",  # Light Yellow
-    Verdict.GAP: "FFC7CE",          # Light Red
+    Verdict.GAP: "FFC7CE",  # Light Red
 }
 
 

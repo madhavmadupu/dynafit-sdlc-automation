@@ -4,6 +4,7 @@ BAAI/bge-large-en-v1.5 embedding wrapper.
 Singleton — loaded once at module import, never per-request.
 Always use instruction prefix for requirement texts.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -59,7 +60,8 @@ class BgeEmbedder:
         prefixed = f"{INSTRUCTION_PREFIX}{text}"
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            None, lambda: self.model.encode([prefixed], normalize_embeddings=True)  # type: ignore[attr-defined]
+            None,
+            lambda: self.model.encode([prefixed], normalize_embeddings=True),  # type: ignore[attr-defined]
         )
         return result[0].tolist()
 
@@ -84,7 +86,8 @@ class BgeEmbedder:
 
             loop = asyncio.get_event_loop()
             batch_result = await loop.run_in_executor(
-                None, lambda p=prefixed: self.model.encode(p, normalize_embeddings=True)  # type: ignore[attr-defined]
+                None,
+                lambda p=prefixed: self.model.encode(p, normalize_embeddings=True),  # type: ignore[attr-defined]
             )
             all_embeddings.extend([vec.tolist() for vec in batch_result])
 
@@ -102,7 +105,8 @@ class BgeEmbedder:
         """
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            None, lambda: self.model.encode([text], normalize_embeddings=True)  # type: ignore[attr-defined]
+            None,
+            lambda: self.model.encode([text], normalize_embeddings=True),  # type: ignore[attr-defined]
         )
         return result[0].tolist()
 

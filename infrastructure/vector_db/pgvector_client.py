@@ -3,6 +3,7 @@ infrastructure/vector_db/pgvector_client.py
 PostgreSQL + pgvector client for historical fitment lookup and write-back.
 Supports exact hash lookup and embedding similarity search.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -11,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from core.config.settings import settings
-from core.schemas.retrieval_context import HistoricalFitmentMatch
 from core.schemas.enums import Verdict
+from core.schemas.retrieval_context import HistoricalFitmentMatch
 
 log = structlog.get_logger()
 

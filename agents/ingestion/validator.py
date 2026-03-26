@@ -3,9 +3,8 @@ agents/ingestion/validator.py
 Quality gate for PartialAtom objects.
 Hard-rejects low-quality atoms; soft-flags borderline ones.
 """
-from __future__ import annotations
 
-from uuid import uuid4
+from __future__ import annotations
 
 import structlog
 

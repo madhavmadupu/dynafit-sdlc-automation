@@ -4,11 +4,11 @@ LLM chain-of-thought classification for Phase 4.
 Renders Jinja2 prompts, calls LLM, parses XML response.
 Output: ClassificationResult per atom.
 """
+
 from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
-from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -18,7 +18,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from core.config.settings import settings
 from core.schemas.classification_result import ClassificationResult
 from core.schemas.enums import RouteDecision, Verdict
-from core.schemas.match_result import MatchResult, ScoredCandidate
+from core.schemas.match_result import MatchResult
 from core.schemas.requirement_atom import RequirementAtom
 from core.schemas.retrieval_context import RetrievalContext
 from infrastructure.llm.client import LLMResponse, llm_call
@@ -27,16 +27,46 @@ log = structlog.get_logger()
 
 # Module-specific guidance lookup
 _MODULE_NOTES: dict[str, str] = {
-    "AP": "AP has strong vendor invoicing, three-way matching, and payment features. Localization gaps exist for India TDS/GST and Germany DATEV.",
-    "AR": "AR supports customer invoicing, collections, and revenue recognition (ASC 606 via separate module). E-invoicing support varies by country.",
-    "GL": "GL covers COA, journal management, financial reporting, and consolidation. DATEV and ELSTER are gaps for Germany.",
-    "SCM": "SCM covers procurement, trade agreements, and master planning. US customs CBP filing requires ISV.",
-    "WMS": "WMS (Warehouse Management) supports advanced warehousing, directed put-away, and wave picking. Some automated sorting systems need ISV.",
-    "MFG": "Manufacturing covers discrete, lean, and process manufacturing. MES integration gaps exist for real-time shop floor control.",
-    "PM": "Project Management covers fixed-price, T&M, and investment projects. Earned value management is configurable but complex.",
-    "HR": "HR covers basic personnel management. Payroll is a separate module. Advanced position budgeting may need ISV.",
-    "PAYROLL": "Payroll has localizations for many countries but India labor law compliance (PF, ESI, gratuity) typically requires ISV.",
-    "FA": "Fixed Assets covers acquisition, depreciation, disposal, and leasing (ASC 842 via Asset Leasing module).",
+    "AP": (
+        "AP has strong vendor invoicing, three-way matching, and payment features."
+        " Localization gaps exist for India TDS/GST and Germany DATEV."
+    ),
+    "AR": (
+        "AR supports customer invoicing, collections, and revenue recognition"
+        " (ASC 606 via separate module). E-invoicing support varies by country."
+    ),
+    "GL": (
+        "GL covers COA, journal management, financial reporting, and"
+        " consolidation. DATEV and ELSTER are gaps for Germany."
+    ),
+    "SCM": (
+        "SCM covers procurement, trade agreements, and master planning."
+        " US customs CBP filing requires ISV."
+    ),
+    "WMS": (
+        "WMS (Warehouse Management) supports advanced warehousing, directed"
+        " put-away, and wave picking. Some automated sorting systems need ISV."
+    ),
+    "MFG": (
+        "Manufacturing covers discrete, lean, and process manufacturing."
+        " MES integration gaps exist for real-time shop floor control."
+    ),
+    "PM": (
+        "Project Management covers fixed-price, T&M, and investment projects."
+        " Earned value management is configurable but complex."
+    ),
+    "HR": (
+        "HR covers basic personnel management. Payroll is a separate module."
+        " Advanced position budgeting may need ISV."
+    ),
+    "PAYROLL": (
+        "Payroll has localizations for many countries but India labor law"
+        " compliance (PF, ESI, gratuity) typically requires ISV."
+    ),
+    "FA": (
+        "Fixed Assets covers acquisition, depreciation, disposal, and leasing"
+        " (ASC 842 via Asset Leasing module)."
+    ),
 }
 
 
@@ -188,7 +218,7 @@ def make_fast_track_result(
     return ClassificationResult(
         atom_id=atom.id,
         verdict=Verdict.FIT,  # FAST_TRACK always → FIT (based on exact history)
-        confidence=0.95,   # High confidence from exact historical precedent
+        confidence=0.95,  # High confidence from exact historical precedent
         matched_capability=best_candidate.name if best_candidate else None,
         gap_description=None,
         config_needed=None,
@@ -223,8 +253,8 @@ def make_soft_gap_result(atom: RequirementAtom) -> ClassificationResult:
         ),
         config_needed=None,
         rationale=(
-            f"SOFT_GAP: Composite retrieval score below threshold with no D365 capabilities "
-            f"found and no historical precedent. Auto-classified as GAP pending consultant review."
+            "SOFT_GAP: Composite retrieval score below threshold with no D365 capabilities "
+            "found and no historical precedent. Auto-classified as GAP pending consultant review."
         ),
         caveats=["Confidence is low — recommend consultant manual review"],
         route_taken=RouteDecision.SOFT_GAP,

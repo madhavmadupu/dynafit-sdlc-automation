@@ -3,6 +3,7 @@ infrastructure/storage/postgres_client.py
 PostgreSQL client for audit trail, run history, and run status management.
 Uses asyncpg via SQLAlchemy async engine.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -45,6 +46,7 @@ class DynafitPostgresClient:
     async def create_run(self, run_id: str, source_files: list[str]) -> None:
         """Create a new pipeline run record."""
         import json
+
         try:
             async with self._session_factory() as session:
                 await session.execute(
@@ -101,7 +103,8 @@ class DynafitPostgresClient:
                         INSERT INTO audit_trail
                             (run_id, atom_id, phase, action, verdict, actor, metadata, created_at)
                         VALUES
-                            (:run_id, :atom_id, :phase, :action, :verdict, :actor, :metadata::jsonb, NOW())
+                            (:run_id, :atom_id, :phase, :action,
+                             :verdict, :actor, :metadata::jsonb, NOW())
                     """),
                     {
                         "run_id": run_id,

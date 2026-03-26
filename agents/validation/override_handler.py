@@ -1,24 +1,24 @@
 """
 agents/validation/override_handler.py
 Phase 5 override processor.
-Applies consultant decisions sent via Human-in-the-Loop interrupt, writes to PostgreSQL audit trail, and pgvector history.
+Applies consultant decisions sent via Human-in-the-Loop
+interrupt, writes to PostgreSQL audit trail and pgvector history.
 """
+
 from __future__ import annotations
 
 import structlog
 
 from core.schemas.classification_result import (
-    AuditEntry,
     ClassificationResult,
     ConsultantDecision,
     ConsultantOverride,
-    ValidatedFitmentBatch,
 )
 from core.schemas.requirement_atom import RequirementAtom
 from core.schemas.retrieval_context import RetrievalContext
 from infrastructure.storage.postgres_client import postgres_client
-from infrastructure.vector_db.pgvector_client import pgvector_client
 from infrastructure.vector_db.embedder import embedder
+from infrastructure.vector_db.pgvector_client import pgvector_client
 
 log = structlog.get_logger()
 
@@ -62,7 +62,7 @@ async def apply_overrides(
 
         original_result = result_by_id[atom_id]
         atom = atom_by_id[atom_id]
-        context = context_by_id.get(atom_id)
+        context_by_id.get(atom_id)
 
         # Generate override record
         override = ConsultantOverride(
@@ -82,7 +82,11 @@ async def apply_overrides(
             new_result = original_result.model_copy(
                 update={
                     "verdict": d.verdict,
-                    "rationale": f"CONSULTANT OVERRIDE: {d.reason}\n\nORIGINAL AI RATIONALE: {original_result.rationale}",
+                    "rationale": (
+                        f"CONSULTANT OVERRIDE: {d.reason}"
+                        f"\n\nORIGINAL AI RATIONALE: "
+                        f"{original_result.rationale}"
+                    ),
                     "needs_review": False,
                 }
             )
@@ -104,7 +108,8 @@ async def apply_overrides(
         )
 
         # 2. Add to Historical Fitment DB (pgvector)
-        # Needs dense vector from retrieval context query phase, but those aren't directly saved on the context.
+        # Needs dense vector from retrieval context query
+        # phase, but those aren't directly saved on the context.
         # We'll re-embed the atom text on the fly.
         embedding = await embedder.embed_requirement(atom.text)
 

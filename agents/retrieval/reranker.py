@@ -4,6 +4,7 @@ CrossEncoder reranking of top-20 RRF candidates to top-5.
 Model: cross-encoder/ms-marco-MiniLM-L-6-v2
 CPU-bound inference runs in thread pool executor (non-blocking).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -84,7 +85,7 @@ class CrossEncoderReranker:
         # Attach scores and sort
         scored: list[tuple[float, D365CapabilityMatch]] = [
             (score, cap.model_copy(update={"rerank_score": score}))
-            for score, cap in zip(scores, candidates)
+            for score, cap in zip(scores, candidates, strict=False)
         ]
         scored.sort(key=lambda x: x[0], reverse=True)
 

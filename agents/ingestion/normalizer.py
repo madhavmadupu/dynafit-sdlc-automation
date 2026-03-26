@@ -3,6 +3,7 @@ agents/ingestion/normalizer.py
 Deduplication and terminology normalization for PartialAtom objects.
 Uses RapidFuzz for dedup and module YAML canonical term maps for alignment.
 """
+
 from __future__ import annotations
 
 import re
@@ -20,20 +21,34 @@ log = structlog.get_logger()
 # MoSCoW signal patterns
 _MOSCOW_PATTERNS: dict[MoSCoW, list[str]] = {
     MoSCoW.MUST: [
-        r"\bmust\b", r"\bmandatory\b", r"\brequired\b", r"\bcritical\b",
-        r"\bshall\b", r"\bessential\b", r"\bnon-negotiable\b",
+        r"\bmust\b",
+        r"\bmandatory\b",
+        r"\brequired\b",
+        r"\bcritical\b",
+        r"\bshall\b",
+        r"\bessential\b",
+        r"\bnon-negotiable\b",
     ],
     MoSCoW.COULD: [
-        r"\bnice to have\b", r"\boptional\b", r"\bif possible\b",
-        r"\bcould\b", r"\bwould be good\b",
+        r"\bnice to have\b",
+        r"\boptional\b",
+        r"\bif possible\b",
+        r"\bcould\b",
+        r"\bwould be good\b",
     ],
     MoSCoW.WONT: [
-        r"\bout of scope\b", r"\bexcluded\b", r"\bnot in scope\b",
-        r"\bwon['']?t\b", r"\bwill not\b",
+        r"\bout of scope\b",
+        r"\bexcluded\b",
+        r"\bnot in scope\b",
+        r"\bwon['']?t\b",
+        r"\bwill not\b",
     ],
     MoSCoW.SHOULD: [
-        r"\bshould\b", r"\bexpected\b", r"\bneeds to\b",
-        r"\bneed to\b", r"\bneeded\b",
+        r"\bshould\b",
+        r"\bexpected\b",
+        r"\bneeds to\b",
+        r"\bneed to\b",
+        r"\bneeded\b",
     ],
 }
 
@@ -156,9 +171,7 @@ def _deduplicate(atoms: list[PartialAtom]) -> list[PartialAtom]:
         for candidate in module_atoms:
             is_duplicate = False
             for i, existing in enumerate(unique):
-                similarity = fuzz.token_sort_ratio(
-                    candidate.text.lower(), existing.text.lower()
-                )
+                similarity = fuzz.token_sort_ratio(candidate.text.lower(), existing.text.lower())
                 if similarity > 90:
                     is_duplicate = True
                     # Keep the one with higher completeness_score

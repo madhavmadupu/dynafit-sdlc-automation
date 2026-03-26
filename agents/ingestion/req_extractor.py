@@ -3,11 +3,11 @@ agents/ingestion/req_extractor.py
 LLM-based requirement atomization.
 Converts RawChunk objects into PartialAtom dictionaries via the ingestion_extract.j2 prompt.
 """
+
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import structlog
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -29,6 +29,7 @@ def _get_jinja_env() -> Environment:
     global _jinja_env
     if _jinja_env is None:
         import pathlib
+
         prompts_dir = str(pathlib.Path(__file__).parents[2] / "core" / "prompts")
         _jinja_env = Environment(
             loader=FileSystemLoader(prompts_dir),
@@ -107,9 +108,7 @@ async def _extract_batch(
 ) -> list[PartialAtom]:
     """Process a single batch of chunks with one LLM call."""
     # Combine batch into single prompt
-    combined_text = "\n\n---\n\n".join(
-        f"[{chunk.source_ref}]\n{chunk.text}" for chunk in batch
-    )
+    combined_text = "\n\n---\n\n".join(f"[{chunk.source_ref}]\n{chunk.text}" for chunk in batch)
     source_ref = batch[0].source_ref if len(batch) == 1 else f"{batch[0].source_file}:batch"
     source_file = batch[0].source_file
 
@@ -145,9 +144,7 @@ async def _extract_batch(
         return []
 
 
-def _parse_llm_response(
-    content: str, source_file: str, batch: list[RawChunk]
-) -> list[PartialAtom]:
+def _parse_llm_response(content: str, source_file: str, batch: list[RawChunk]) -> list[PartialAtom]:
     """Parse LLM JSON response into PartialAtom list."""
     # Strip any accidental markdown fences
     cleaned = content.strip()

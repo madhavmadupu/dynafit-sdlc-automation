@@ -3,22 +3,25 @@ agents/validation/agent.py
 Phase 5 — Validation & Output Generation LangGraph node.
 Processes overrides, detects conflicts, and generates the final Excel report.
 """
+
 from __future__ import annotations
 
-import asyncio
-from typing import Any
 from datetime import datetime
+from typing import Any
 
 import structlog
 
 from agents.validation.consistency_checker import detect_conflicts
 from agents.validation.override_handler import apply_overrides
 from agents.validation.report_generator import generate_excel_report
-from core.schemas.classification_result import ValidatedFitmentBatch, AuditEntry
+from core.schemas.classification_result import (
+    AuditEntry,
+    ClassificationResult,
+    ValidatedFitmentBatch,
+)
+from core.schemas.enums import RunStatus
 from core.schemas.requirement_atom import RequirementAtom
 from core.schemas.retrieval_context import RetrievalContext
-from core.schemas.classification_result import ClassificationResult
-from core.schemas.enums import RunStatus
 from infrastructure.storage.postgres_client import postgres_client
 
 log = structlog.get_logger()
@@ -72,8 +75,8 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
             metadata={
                 "route": result.route_taken.value,
                 "confidence": result.confidence,
-                "overridden": any(str(o.atom_id) == str(result.atom_id) for o in overrides_applied)
-            }
+                "overridden": any(str(o.atom_id) == str(result.atom_id) for o in overrides_applied),
+            },
         )
         audit_trail.append(entry)
         await postgres_client.write_audit_entry(

@@ -4,6 +4,7 @@ Idempotent schema creation script for Postgres (Audit trail + Pgvector).
 Creates `dynafit_runs`, `pipeline_audit`, and `historical_fitments` tables.
 Ensures the pgvector extension is enabled.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -13,9 +14,9 @@ import sys
 # Ensure project root is in path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+
 import asyncpg
 import structlog
-from urllib.parse import urlparse
 
 from core.config.settings import settings
 
@@ -84,7 +85,7 @@ async def run_migrations() -> None:
         uri = uri.replace("postgresql+asyncpg://", "postgresql://")
     elif uri.startswith("postgresql://"):
         pass
-        
+
     try:
         log.info("setup.connecting_postgres", dsn="***")
         conn = await asyncpg.connect(uri)

@@ -3,6 +3,7 @@ core/state/requirement_state.py
 The single RequirementState TypedDict that flows through the entire LangGraph pipeline.
 Every agent node reads from and writes partial updates to this state.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -11,7 +12,6 @@ from uuid import uuid4
 
 from core.schemas.classification_result import (
     ClassificationResult,
-    ConflictReport,
     ConsultantDecision,
     ValidatedFitmentBatch,
 )
@@ -32,15 +32,15 @@ class RequirementState(TypedDict, total=False):
     """
 
     # ── Run metadata ─────────────────────────────────────────────────────────
-    run_id: str                        # UUID string — thread_id for LangGraph checkpoint
-    created_at: str                    # ISO datetime when run was created
-    source_files: list[str]            # Original file paths / uploaded filenames
-    kb_version: str                    # Knowledge base version used (for cache invalidation)
+    run_id: str  # UUID string — thread_id for LangGraph checkpoint
+    created_at: str  # ISO datetime when run was created
+    source_files: list[str]  # Original file paths / uploaded filenames
+    kb_version: str  # Knowledge base version used (for cache invalidation)
 
     # ── Phase 1: Ingestion ───────────────────────────────────────────────────
-    atoms: list[RequirementAtom]       # Validated, normalized RequirementAtoms
-    rejected_atoms: list[RejectedAtom] # Atoms hard-rejected during validation
-    ingestion_errors: list[dict]       # File-level parse errors
+    atoms: list[RequirementAtom]  # Validated, normalized RequirementAtoms
+    rejected_atoms: list[RejectedAtom]  # Atoms hard-rejected during validation
+    ingestion_errors: list[dict]  # File-level parse errors
 
     # ── Phase 2: Retrieval ───────────────────────────────────────────────────
     retrieval_contexts: list[RetrievalContext]  # One per atom
@@ -53,18 +53,18 @@ class RequirementState(TypedDict, total=False):
     # ── Phase 4: Classification ──────────────────────────────────────────────
     classification_results: list[ClassificationResult]
     classification_errors: list[dict]
-    llm_cost_usd: float               # Running LLM cost total for this run
+    llm_cost_usd: float  # Running LLM cost total for this run
 
     # ── Phase 5: Validation & Output ─────────────────────────────────────────
     validated_batch: ValidatedFitmentBatch | None
-    output_path: str | None           # Absolute path to fitment_matrix.xlsx
+    output_path: str | None  # Absolute path to fitment_matrix.xlsx
 
     # ── Human-in-the-Loop ────────────────────────────────────────────────────
-    human_review_required: list[str]   # atom_ids (strings) needing consultant review
+    human_review_required: list[str]  # atom_ids (strings) needing consultant review
     consultant_decisions: list[ConsultantDecision]  # Decisions submitted via PATCH /review
 
     # ── Cross-phase ───────────────────────────────────────────────────────────
-    pipeline_errors: list[dict]        # All errors across all phases (append-only)
+    pipeline_errors: list[dict]  # All errors across all phases (append-only)
 
 
 def make_initial_state(

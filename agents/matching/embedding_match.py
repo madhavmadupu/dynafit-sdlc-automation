@@ -3,6 +3,7 @@ agents/matching/embedding_match.py
 Cosine similarity and entity overlap scoring between requirement and capabilities.
 Uses embeddings stored on D365CapabilityMatch from Phase 2.
 """
+
 from __future__ import annotations
 
 import math
@@ -10,7 +11,7 @@ import re
 
 import structlog
 
-from core.schemas.retrieval_context import D365CapabilityMatch, RetrievalContext
+from core.schemas.retrieval_context import RetrievalContext
 
 log = structlog.get_logger()
 
@@ -23,7 +24,7 @@ def compute_cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
     if len(vec_a) != len(vec_b) or not vec_a:
         return 0.0
 
-    dot = sum(a * b for a, b in zip(vec_a, vec_b))
+    dot = sum(a * b for a, b in zip(vec_a, vec_b, strict=False))
     mag_a = math.sqrt(sum(a * a for a in vec_a))
     mag_b = math.sqrt(sum(b * b for b in vec_b))
 
@@ -41,6 +42,7 @@ def compute_entity_overlap(requirement_text: str, capability_description: str) -
     Returns:
         Float in [0.0, 1.0] — proportion of requirement tokens found in capability.
     """
+
     def tokenize(text: str) -> set[str]:
         tokens = re.split(r"[^a-zA-Z0-9]+", text.lower())
         # Remove very short/common tokens
@@ -80,13 +82,15 @@ def score_capabilities(
         cosine = cap.vector_score if cap.vector_score > 0 else 0.0
         overlap = compute_entity_overlap(requirement_text, cap.description)
 
-        scored.append({
-            "capability": cap,
-            "cosine_score": cosine,
-            "overlap_score": overlap,
-            "rerank_score": cap.rerank_score,
-            "rrf_score": cap.rrf_score,
-        })
+        scored.append(
+            {
+                "capability": cap,
+                "cosine_score": cosine,
+                "overlap_score": overlap,
+                "rerank_score": cap.rerank_score,
+                "rrf_score": cap.rrf_score,
+            }
+        )
 
     # Sort by rerank_score (most informative signal after CrossEncoder)
     scored.sort(key=lambda x: x["rerank_score"], reverse=True)

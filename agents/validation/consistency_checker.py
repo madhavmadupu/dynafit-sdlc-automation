@@ -3,6 +3,7 @@ agents/validation/consistency_checker.py
 Phase 5 cross-requirement conflict detection.
 Identifies logical contradictions (e.g., Atom A is FIT with AP-01, Atom B is GAP but needs AP-01).
 """
+
 from __future__ import annotations
 
 import structlog
@@ -22,7 +23,8 @@ def detect_conflicts(
 
     Rules:
     1. Capability Contradiction: Two atoms matched to the same capability, but one is GAP.
-    2. Dependency Conflict: PARTIAL_FIT requires config X, but another atom explicitly excludes it. (Future enhancement)
+    2. Dependency Conflict: PARTIAL_FIT requires config X,
+       but another atom explicitly excludes it. (Future)
 
     Args:
         results: Full list of post-classification results
@@ -60,7 +62,11 @@ def detect_conflicts(
                         f"Some requirements were marked FIT, while others mapped to "
                         f"the same capability were marked GAP."
                     ),
-                    suggested_resolution="Review the GAP classification — if the capability handles the FIT requirement, why does it fail the GAP one?",
+                    suggested_resolution=(
+                        "Review the GAP classification — if the "
+                        "capability handles the FIT requirement, "
+                        "why does it fail the GAP one?"
+                    ),
                 )
             )
 

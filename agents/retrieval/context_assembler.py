@@ -3,6 +3,7 @@ agents/retrieval/context_assembler.py
 Assembles top-5 capabilities + MS Learn refs + historical fitments into RetrievalContext.
 Also manages Redis cache for retrieval results.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -29,9 +30,7 @@ class ContextAssembler:
     Cache invalidation: Automatic when KB_VERSION changes.
     """
 
-    async def get_cached(
-        self, atom: RequirementAtom, kb_version: str
-    ) -> RetrievalContext | None:
+    async def get_cached(self, atom: RequirementAtom, kb_version: str) -> RetrievalContext | None:
         """
         Check Redis cache before performing retrieval.
 
@@ -89,12 +88,8 @@ class ContextAssembler:
         """
         # Confidence diagnostic signals
         confidence_signals: dict = {
-            "max_rerank_score": max(
-                (c.rerank_score for c in top_capabilities), default=0.0
-            ),
-            "max_vector_score": max(
-                (c.vector_score for c in top_capabilities), default=0.0
-            ),
+            "max_rerank_score": max((c.rerank_score for c in top_capabilities), default=0.0),
+            "max_vector_score": max((c.vector_score for c in top_capabilities), default=0.0),
             "has_history": len(prior_fitments) > 0,
             "has_exact_history": any(p.is_exact_match for p in prior_fitments),
             "n_capabilities": len(top_capabilities),
@@ -104,7 +99,7 @@ class ContextAssembler:
         context = RetrievalContext(
             atom_id=atom.id,
             atom_hash=atom.atom_hash,
-            top_capabilities=top_capabilities[:settings.RERANKER_TOP_K],
+            top_capabilities=top_capabilities[: settings.RERANKER_TOP_K],
             ms_learn_refs=ms_learn_refs[:3],  # Top-3 MS Learn chunks
             prior_fitments=prior_fitments,
             confidence_signals=confidence_signals,

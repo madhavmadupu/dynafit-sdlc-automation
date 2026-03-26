@@ -3,10 +3,10 @@ agents/ingestion/doc_parser.py
 Format detection and raw text extraction from business requirement documents.
 Supports: .xlsx, .xls, .docx, .doc, .pdf, .txt, .md, .eml
 """
+
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import structlog
@@ -21,9 +21,9 @@ class RawChunk:
     """A raw text block extracted from a source document."""
 
     text: str
-    source_ref: str          # e.g. "brd.xlsx:row_12" or "spec.docx:para_3"
-    source_file: str         # Basename of the source file
-    chunk_index: int = 0     # Sequential chunk number within file
+    source_ref: str  # e.g. "brd.xlsx:row_12" or "spec.docx:para_3"
+    source_file: str  # Basename of the source file
+    chunk_index: int = 0  # Sequential chunk number within file
 
 
 def parse_document(file_path: str) -> list[RawChunk]:
@@ -207,12 +207,10 @@ def _parse_email(path: Path, source_file: str) -> list[RawChunk]:
     return chunks
 
 
-def _parse_with_docling(
-    path: Path, source_file: str, do_ocr: bool = False
-) -> list[RawChunk]:
+def _parse_with_docling(path: Path, source_file: str, do_ocr: bool = False) -> list[RawChunk]:
     """Parse document with Docling library."""
-    from docling.document_converter import DocumentConverter
     from docling.datamodel.pipeline_options import PipelineOptions
+    from docling.document_converter import DocumentConverter
 
     options = PipelineOptions()
     options.do_ocr = do_ocr

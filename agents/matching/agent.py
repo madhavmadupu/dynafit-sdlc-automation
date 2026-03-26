@@ -3,11 +3,11 @@ agents/matching/agent.py
 Phase 3 — Semantic Matching Agent LangGraph node.
 Scores candidates, computes composite confidence, and makes routing decisions.
 """
+
 from __future__ import annotations
 
 import asyncio
 from typing import Any
-from uuid import UUID
 
 import structlog
 
@@ -18,7 +18,7 @@ from agents.matching.confidence_scorer import (
     decide_route,
 )
 from agents.matching.embedding_match import score_capabilities
-from core.schemas.enums import ConfidenceBand, RouteDecision, Verdict
+from core.schemas.enums import ConfidenceBand, RouteDecision
 from core.schemas.match_result import MatchResult, ScoredCandidate
 from core.schemas.requirement_atom import RequirementAtom
 from core.schemas.retrieval_context import D365CapabilityMatch, RetrievalContext
@@ -43,9 +43,7 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
     log.info(f"{PHASE}.start", run_id=run_id, atom_count=len(atoms))
 
     # Build lookup: atom_id → RetrievalContext
-    context_by_atom: dict[str, RetrievalContext] = {
-        str(ctx.atom_id): ctx for ctx in contexts
-    }
+    context_by_atom: dict[str, RetrievalContext] = {str(ctx.atom_id): ctx for ctx in contexts}
 
     tasks = [
         _match_single(
@@ -60,7 +58,7 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
     results: list[MatchResult] = []
     errors: list[dict] = []
 
-    for atom, outcome in zip(atoms, outcomes):
+    for atom, outcome in zip(atoms, outcomes, strict=False):
         if isinstance(outcome, Exception):
             log.error(
                 f"{PHASE}.atom_failed",
@@ -68,11 +66,13 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
                 atom_id=str(atom.id),
                 error=str(outcome),
             )
-            errors.append({
-                "phase": PHASE,
-                "atom_id": str(atom.id),
-                "error": str(outcome),
-            })
+            errors.append(
+                {
+                    "phase": PHASE,
+                    "atom_id": str(atom.id),
+                    "error": str(outcome),
+                }
+            )
         else:
             results.append(outcome)
 
@@ -132,9 +132,7 @@ async def _match_single(
     for scored in scored_caps:
         cap: D365CapabilityMatch = scored["capability"]
         # Historical boost from prior fitments
-        historical_boost = _compute_historical_boost(
-            cap.capability_id, context.prior_fitments
-        )
+        historical_boost = _compute_historical_boost(cap.capability_id, context.prior_fitments)
 
         # Composite final score for ranking within candidates
         final_score = (
@@ -209,9 +207,7 @@ async def _match_single(
     )
 
 
-def _compute_historical_boost(
-    capability_id: str, prior_fitments: list
-) -> float:
+def _compute_historical_boost(capability_id: str, prior_fitments: list) -> float:
     """Boost score if this capability was used in a prior fitment decision."""
     for fitment in prior_fitments:
         matched = getattr(fitment, "matched_capability", None)
