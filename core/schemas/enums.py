@@ -4,10 +4,10 @@ All categorical enums used across the DYNAFIT pipeline.
 Never create new enums elsewhere — always import from here.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class D365Module(str, Enum):
+class D365Module(StrEnum):
     """Microsoft Dynamics 365 F&O module codes."""
 
     AP = "AP"  # Accounts Payable
@@ -27,7 +27,7 @@ class D365Module(str, Enum):
     UNKNOWN = "UNKNOWN"  # Could not determine module
 
 
-class MoSCoW(str, Enum):
+class MoSCoW(StrEnum):
     """MoSCoW priority classification for requirements."""
 
     MUST = "MUST"  # Mandatory — system won't be accepted without this
@@ -36,7 +36,7 @@ class MoSCoW(str, Enum):
     WONT = "WONT"  # Explicitly out of scope for this delivery
 
 
-class IntentType(str, Enum):
+class IntentType(StrEnum):
     """Classification of the requirement's intent."""
 
     FUNCTIONAL = "FUNCTIONAL"  # Standard business function
@@ -46,7 +46,7 @@ class IntentType(str, Enum):
     DATA_MIGRATION = "DATA_MIGRATION"  # Data migration requirement
 
 
-class Verdict(str, Enum):
+class Verdict(StrEnum):
     """Fitment verdict — the core output of the classification phase."""
 
     FIT = "FIT"  # D365 covers requirement fully out-of-the-box
@@ -54,7 +54,7 @@ class Verdict(str, Enum):
     GAP = "GAP"  # D365 does not cover; custom development required
 
 
-class RouteDecision(str, Enum):
+class RouteDecision(StrEnum):
     """Phase 3 → Phase 4 routing decision."""
 
     FAST_TRACK = "FAST_TRACK"  # High confidence + historical precedent → auto-FIT
@@ -62,7 +62,7 @@ class RouteDecision(str, Enum):
     SOFT_GAP = "SOFT_GAP"  # Low confidence + no candidates → auto-GAP
 
 
-class ConfidenceBand(str, Enum):
+class ConfidenceBand(StrEnum):
     """Semantic confidence band derived from composite score."""
 
     HIGH = "HIGH"  # composite >= 0.70
@@ -70,7 +70,7 @@ class ConfidenceBand(str, Enum):
     LOW = "LOW"  # composite < 0.40
 
 
-class AtomStatus(str, Enum):
+class AtomStatus(StrEnum):
     """Processing status of a RequirementAtom."""
 
     ACTIVE = "ACTIVE"  # Normal processing
@@ -79,7 +79,7 @@ class AtomStatus(str, Enum):
     OUT_OF_SCOPE = "OUT_OF_SCOPE"  # Explicitly excluded
 
 
-class RunStatus(str, Enum):
+class RunStatus(StrEnum):
     """Overall pipeline run status."""
 
     QUEUED = "QUEUED"  # Run created, not yet started

@@ -26,7 +26,7 @@ jobs:
           cache: pip
 
       - name: Install dev dependencies
-        run: pip install ruff mypy pydantic
+        run: pip install "ruff>=0.12.0" mypy pydantic
 
       - name: Ruff lint
         run: ruff check .
@@ -130,10 +130,7 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-
-      - name: Build
+      - name: Build (includes type checking)
         run: npm run build
 
   # ──────────────────────────────────────────────
