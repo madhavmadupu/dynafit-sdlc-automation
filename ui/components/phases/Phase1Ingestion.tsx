@@ -98,11 +98,6 @@ export default function Phase1Ingestion({ runIngestion, hasBackend }: Props) {
         <div className="flex items-center gap-2 mb-1">
           <div className="w-1.5 h-4 bg-brand-500 rounded-full" />
           <h2 className="text-base font-semibold text-white">Phase 1 — Ingestion Agent</h2>
-          {hasBackend && (
-            <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-[10px]">
-              Backend Connected
-            </span>
-          )}
         </div>
         <p className="text-sm text-slate-500 ml-4">
           Upload requirement documents. The agent will parse, atomize, normalize, and validate each requirement.

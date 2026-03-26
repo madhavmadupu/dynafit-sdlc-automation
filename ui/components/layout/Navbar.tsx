@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Pause, Play, Download, RotateCcw, Loader2 } from "lucide-react";
+import { Pause, Play, Download, RotateCcw, Loader2, Wifi, WifiOff } from "lucide-react";
 
 export default function Navbar() {
   const { run, hasBackend, backendRunId, pauseRun, resumeRun, resetRun } = useDynafitStore();
@@ -54,11 +54,6 @@ export default function Navbar() {
           <span className="text-sm font-bold text-white tracking-tight leading-none">DYNAFIT</span>
           <span className="text-[10px] text-slate-500 leading-none mt-0.5">D365 F&O Pipeline</span>
         </div>
-        {hasBackend && (
-          <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-[9px]">
-            API
-          </span>
-        )}
       </div>
 
       {/* Center: Status */}
@@ -94,6 +89,21 @@ export default function Navbar() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
+        {/* Mode indicator */}
+        {hasBackend ? (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-400/10 border border-emerald-400/20">
+            <Wifi size={12} className="text-emerald-400" />
+            <span className="text-[11px] font-medium text-emerald-300">Live</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/10 border border-amber-400/20">
+            <WifiOff size={12} className="text-amber-400" />
+            <span className="text-[11px] font-medium text-amber-300">Simulation</span>
+          </div>
+        )}
+
+        <div className="h-5 w-px bg-surface-border" />
+
         {(isRunning || isPaused) && (
           <button
             onClick={isPaused ? resumeRun : pauseRun}
