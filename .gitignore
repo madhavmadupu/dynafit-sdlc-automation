@@ -101,3 +101,6 @@ ui/.vercel
 # typescript
 ui/*.tsbuildinfo
 ui/next-env.d.ts
+ui/.next/*
+ui/out/*
+ui/build/*
