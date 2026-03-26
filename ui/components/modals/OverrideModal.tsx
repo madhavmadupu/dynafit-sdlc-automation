@@ -2,31 +2,61 @@
 
 import { useState } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
+import { api } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ConfidenceMeter from "@/components/shared/ConfidenceMeter";
 import type { ClassificationResult, FitmentClass } from "@/types";
 import { cn } from "@/lib/utils";
-import { Shield, ArrowRight } from "lucide-react";
+import { Shield, ArrowRight, Loader2 } from "lucide-react";
 
 interface OverrideModalProps {
   open: boolean;
   onClose: () => void;
   item: ClassificationResult | null;
+  hasBackend?: boolean;
+  backendRunId?: string | null;
 }
 
-export default function OverrideModal({ open, onClose, item }: OverrideModalProps) {
+export default function OverrideModal({ open, onClose, item, hasBackend, backendRunId }: OverrideModalProps) {
   const { overrideClassification } = useDynafitStore();
   const [newVerdict, setNewVerdict] = useState<FitmentClass | null>(null);
   const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!item || !newVerdict || !reason.trim()) return;
-    overrideClassification(item.requirementId, newVerdict, reason.trim(), "consultant@company.com");
-    setNewVerdict(null);
-    setReason("");
-    onClose();
+
+    setSubmitting(true);
+    try {
+      // Update local store
+      overrideClassification(item.requirementId, newVerdict, reason.trim(), "consultant@company.com");
+
+      // If backend is connected, submit the review decision to the backend
+      if (hasBackend && backendRunId) {
+        try {
+          await api.submitReview(backendRunId, {
+            decisions: [
+              {
+                atom_id: item.requirementId,
+                verdict: newVerdict,
+                reason: reason.trim(),
+                reviewed_by: "consultant@company.com",
+              },
+            ],
+          });
+        } catch (e) {
+          console.error("Backend review submission failed (local override applied):", e);
+        }
+      }
+
+      setNewVerdict(null);
+      setReason("");
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -120,14 +150,15 @@ export default function OverrideModal({ open, onClose, item }: OverrideModalProp
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!newVerdict || !reason.trim()}
+            disabled={!newVerdict || !reason.trim() || submitting}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              newVerdict && reason.trim()
+              "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
+              newVerdict && reason.trim() && !submitting
                 ? "bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-900/30"
                 : "bg-surface-hover text-slate-600 cursor-not-allowed"
             )}
           >
+            {submitting && <Loader2 size={14} className="animate-spin" />}
             Confirm Override
           </button>
         </DialogFooter>

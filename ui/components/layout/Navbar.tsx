@@ -1,14 +1,47 @@
 "use client";
 
+import { useState } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Pause, Play, Download, RotateCcw } from "lucide-react";
+import { Pause, Play, Download, RotateCcw, Loader2 } from "lucide-react";
 
 export default function Navbar() {
-  const { run, pauseRun, resumeRun, resetRun } = useDynafitStore();
+  const { run, hasBackend, backendRunId, pauseRun, resumeRun, resetRun } = useDynafitStore();
   const isRunning = run.status === "running";
   const isPaused = run.status === "paused";
   const isCompleted = run.status === "completed";
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (hasBackend && backendRunId) {
+      setExporting(true);
+      try {
+        const blob = await api.downloadFitmentMatrix(backendRunId);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "fitment_matrix.xlsx";
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e: any) {
+        console.error("Export failed:", e);
+        alert(e.message || "Export failed");
+      } finally {
+        setExporting(false);
+      }
+    } else {
+      const blob = new Blob(["fitment_matrix"], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fitment_matrix.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
 
   return (
     <nav className="h-14 bg-surface-card border-b border-surface-border px-6 flex items-center justify-between shrink-0 z-50">
@@ -21,6 +54,11 @@ export default function Navbar() {
           <span className="text-sm font-bold text-white tracking-tight leading-none">DYNAFIT</span>
           <span className="text-[10px] text-slate-500 leading-none mt-0.5">D365 F&O Pipeline</span>
         </div>
+        {hasBackend && (
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-[9px]">
+            API
+          </span>
+        )}
       </div>
 
       {/* Center: Status */}
@@ -68,19 +106,11 @@ export default function Navbar() {
 
         {isCompleted && (
           <button
-            onClick={() => {
-              // Mock export
-              const blob = new Blob(["fitment_matrix"], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "fitment_matrix.xlsx";
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="px-3 py-1.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-xs hover:bg-emerald-400/20 transition-colors flex items-center gap-1.5"
+            onClick={handleExport}
+            disabled={exporting}
+            className="px-3 py-1.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-xs hover:bg-emerald-400/20 transition-colors flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download size={12} />
+            {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
             Export Matrix
           </button>
         )}

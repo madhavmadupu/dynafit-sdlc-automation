@@ -89,6 +89,12 @@ interface DynafitStore {
   run: DynafitRun;
   sidebarCollapsed: boolean;
 
+  // Backend connection
+  hasBackend: boolean;
+  backendRunId: string | null;
+  setHasBackend: (v: boolean) => void;
+  setBackendRunId: (id: string | null) => void;
+
   // Navigation
   goToPhase: (index: number) => void;
   canNavigateTo: (index: number) => boolean;
@@ -136,6 +142,14 @@ export const useDynafitStore = create<DynafitStore>()(
     (set, get) => ({
       run: createInitialRun(),
       sidebarCollapsed: false,
+      hasBackend: false,
+      backendRunId: null,
+
+      setHasBackend: (v) =>
+        set({ hasBackend: v }, false, "setHasBackend"),
+
+      setBackendRunId: (id) =>
+        set({ backendRunId: id }, false, "setBackendRunId"),
 
       // ─── Navigation ──────────────────────────────────────────
       goToPhase: (index: number) => {
@@ -378,7 +392,7 @@ export const useDynafitStore = create<DynafitStore>()(
         ),
 
       resetRun: () =>
-        set({ run: createInitialRun() }, false, "resetRun"),
+        set({ run: createInitialRun(), backendRunId: null }, false, "resetRun"),
 
       setRunError: (message) =>
         set(

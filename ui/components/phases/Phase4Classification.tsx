@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
-import { simulateClassification } from "@/lib/simulation";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ConfidenceMeter from "@/components/shared/ConfidenceMeter";
 import ErrorBanner from "@/components/shared/ErrorBanner";
@@ -19,7 +18,13 @@ const MODULES_ALL = ["All", "AP", "AR", "GL", "SCM", "PO", "FA", "HR", "PP", "IN
 const CLASSIFICATIONS: (FitmentClass | "ALL")[] = ["ALL", "FIT", "PARTIAL_FIT", "GAP"];
 const PAGE_SIZE = 25;
 
-export default function Phase4Classification() {
+interface Props {
+  runClassification: () => Promise<void>;
+  hasBackend: boolean;
+  backendRunId: string | null;
+}
+
+export default function Phase4Classification({ runClassification, hasBackend, backendRunId }: Props) {
   const { run, retryPhase } = useDynafitStore();
   const phase = run.phases.find((p) => p.key === "classification")!;
   const prevPhase = run.phases.find((p) => p.key === "matching")!;
@@ -112,14 +117,22 @@ export default function Phase4Classification() {
               ))}
             </div>
           </div>
-          <button
-            onClick={simulateClassification}
-            className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
-          >
-            <Brain size={16} />
-            Run Classification Agent
-            <ArrowRight size={16} />
-          </button>
+          {!backendRunId && (
+            <button
+              onClick={runClassification}
+              className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
+            >
+              <Brain size={16} />
+              Run Classification Agent
+              <ArrowRight size={16} />
+            </button>
+          )}
+          {backendRunId && (
+            <div className="flex items-center justify-center gap-2 py-4 text-brand-400">
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-sm">Backend pipeline is running this phase automatically...</span>
+            </div>
+          )}
         </>
       )}
 

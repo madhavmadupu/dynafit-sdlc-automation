@@ -1,7 +1,6 @@
 "use client";
 
 import { useDynafitStore } from "@/store/useDynafitStore";
-import { simulateMatching } from "@/lib/simulation";
 import StatCard from "@/components/shared/StatCard";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import { cn } from "@/lib/utils";
@@ -17,7 +16,13 @@ const THRESHOLD_ZONES = [
   { label: "FIT", range: "> 0.85", color: "bg-emerald-400", textColor: "text-emerald-400", width: "15%" },
 ];
 
-export default function Phase3Matching() {
+interface Props {
+  runMatching: () => Promise<void>;
+  hasBackend: boolean;
+  backendRunId: string | null;
+}
+
+export default function Phase3Matching({ runMatching, hasBackend, backendRunId }: Props) {
   const { run, retryPhase } = useDynafitStore();
   const phase = run.phases.find((p) => p.key === "matching")!;
   const prevPhase = run.phases.find((p) => p.key === "retrieval")!;
@@ -92,15 +97,22 @@ export default function Phase3Matching() {
       )}
 
       {/* Idle run button */}
-      {phase.status === "idle" && canRun && (
+      {phase.status === "idle" && canRun && !backendRunId && (
         <button
-          onClick={simulateMatching}
+          onClick={runMatching}
           className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
         >
           <Zap size={16} />
           Run Semantic Matching
           <ArrowRight size={16} />
         </button>
+      )}
+
+      {phase.status === "idle" && canRun && backendRunId && (
+        <div className="flex items-center justify-center gap-2 py-8 text-brand-400">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm">Backend pipeline is running this phase automatically...</span>
+        </div>
       )}
 
       {phase.status === "idle" && !canRun && (

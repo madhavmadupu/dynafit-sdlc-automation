@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
 import { simulateValidation } from "@/lib/simulation";
+import { api } from "@/lib/api";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ConfidenceMeter from "@/components/shared/ConfidenceMeter";
 import StatCard from "@/components/shared/StatCard";
@@ -11,11 +12,16 @@ import OverrideModal from "@/components/modals/OverrideModal";
 import { cn } from "@/lib/utils";
 import type { ClassificationResult } from "@/types";
 import {
-  CheckCircle, Loader2, Lock, ArrowRight, Download, Shield, 
+  CheckCircle, Loader2, Lock, ArrowRight, Download, Shield,
   AlertTriangle, FileText, Settings, ArrowDown
 } from "lucide-react";
 
-export default function Phase5Validation() {
+interface Props {
+  hasBackend: boolean;
+  backendRunId: string | null;
+}
+
+export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
   const { run, retryPhase } = useDynafitStore();
   const phase = run.phases.find((p) => p.key === "validation")!;
   const prevPhase = run.phases.find((p) => p.key === "classification")!;
@@ -26,17 +32,40 @@ export default function Phase5Validation() {
 
   const [overrideItem, setOverrideItem] = useState<ClassificationResult | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const fitments = run.validatedFitments;
 
-  const handleExport = () => {
-    const blob = new Blob(["fitment_matrix_export"], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "fitment_matrix.xlsx";
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    if (hasBackend && backendRunId) {
+      // Download real fitment matrix from backend
+      setExporting(true);
+      try {
+        const blob = await api.downloadFitmentMatrix(backendRunId);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "fitment_matrix.xlsx";
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e: any) {
+        console.error("Export failed:", e);
+        alert(e.message || "Export failed — file may not be generated yet.");
+      } finally {
+        setExporting(false);
+      }
+    } else {
+      // Fallback: generate a placeholder blob
+      const blob = new Blob(["fitment_matrix_export"], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fitment_matrix.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   return (
@@ -96,14 +125,22 @@ export default function Phase5Validation() {
               ))}
             </div>
           </div>
-          <button
-            onClick={simulateValidation}
-            className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
-          >
-            <CheckCircle size={16} />
-            Run Validation
-            <ArrowRight size={16} />
-          </button>
+          {!backendRunId && (
+            <button
+              onClick={simulateValidation}
+              className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
+            >
+              <CheckCircle size={16} />
+              Run Validation
+              <ArrowRight size={16} />
+            </button>
+          )}
+          {backendRunId && (
+            <div className="flex items-center justify-center gap-2 py-4 text-brand-400">
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-sm">Waiting for backend pipeline to reach validation...</span>
+            </div>
+          )}
         </>
       )}
 
@@ -134,9 +171,10 @@ export default function Phase5Validation() {
               </div>
               <button
                 onClick={handleExport}
-                className="px-3 py-1.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-xs hover:bg-emerald-400/20 transition-colors flex items-center gap-1.5"
+                disabled={exporting}
+                className="px-3 py-1.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-xs hover:bg-emerald-400/20 transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
-                <Download size={12} />
+                {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
                 Export Matrix
               </button>
             </div>
@@ -222,6 +260,8 @@ export default function Phase5Validation() {
           setOverrideItem(null);
         }}
         item={overrideItem}
+        hasBackend={hasBackend}
+        backendRunId={backendRunId}
       />
     </div>
   );

@@ -21,8 +21,13 @@ const PIPELINE_STEPS = [
   { label: "Validator", desc: "Schema validation & completeness" },
 ];
 
-export default function Phase1Ingestion() {
-  const { run, addFiles, removeFile, updateFileProgress, startPhase, retryPhase } = useDynafitStore();
+interface Props {
+  runIngestion: (files?: File[]) => Promise<void>;
+  hasBackend: boolean;
+}
+
+export default function Phase1Ingestion({ runIngestion, hasBackend }: Props) {
+  const { run, addFiles, removeFile, updateFileProgress, retryPhase } = useDynafitStore();
   const phase = run.phases.find((p) => p.key === "ingestion")!;
   const isActive = ["processing", "uploading", "analyzing"].includes(phase.status);
   const isCompleted = phase.status === "completed" || phase.status === "warning";
@@ -30,8 +35,14 @@ export default function Phase1Ingestion() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Keep actual File objects for backend upload
+  const realFilesRef = useRef<File[]>([]);
+
   const handleFiles = useCallback((fileList: FileList) => {
-    const newFiles: UploadedFile[] = Array.from(fileList).map((f) => ({
+    const fileArray = Array.from(fileList);
+    realFilesRef.current = [...realFilesRef.current, ...fileArray];
+
+    const newFiles: UploadedFile[] = fileArray.map((f) => ({
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: f.name,
       size: f.size,
@@ -48,14 +59,32 @@ export default function Phase1Ingestion() {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const handleRemoveFile = useCallback((id: string) => {
+    const store = useDynafitStore.getState();
+    const fileEntry = store.run.uploadedFiles.find((f) => f.id === id);
+    if (fileEntry) {
+      realFilesRef.current = realFilesRef.current.filter(
+        (f) => f.name !== fileEntry.name
+      );
+    }
+    removeFile(id);
+  }, [removeFile]);
+
   const handleRunIngestion = async () => {
-    // Simulate file uploads first
+    // Show upload progress for each file
     for (const f of run.uploadedFiles) {
       updateFileProgress(f.id, 50, "uploading");
       await new Promise((r) => setTimeout(r, 200));
       updateFileProgress(f.id, 100, "parsed");
     }
-    await simulateIngestion();
+
+    if (hasBackend && realFilesRef.current.length > 0) {
+      // Real backend: upload files and start pipeline
+      await runIngestion(realFilesRef.current);
+    } else {
+      // Simulation fallback
+      await runIngestion();
+    }
   };
 
   const currentPipelineStep = phase.stats?.step
@@ -69,6 +98,11 @@ export default function Phase1Ingestion() {
         <div className="flex items-center gap-2 mb-1">
           <div className="w-1.5 h-4 bg-brand-500 rounded-full" />
           <h2 className="text-base font-semibold text-white">Phase 1 — Ingestion Agent</h2>
+          {hasBackend && (
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 text-[10px]">
+              Backend Connected
+            </span>
+          )}
         </div>
         <p className="text-sm text-slate-500 ml-4">
           Upload requirement documents. The agent will parse, atomize, normalize, and validate each requirement.
@@ -142,7 +176,7 @@ export default function Phase1Ingestion() {
                   <div className="flex items-center gap-2">
                     {f.status === "parsed" && <CheckCheck size={14} className="text-emerald-400" />}
                     {f.status === "error" && <AlertTriangle size={14} className="text-red-400" />}
-                    <button onClick={() => removeFile(f.id)} className="text-slate-600 hover:text-slate-400 transition-colors">
+                    <button onClick={() => handleRemoveFile(f.id)} className="text-slate-600 hover:text-slate-400 transition-colors">
                       <X size={14} />
                     </button>
                   </div>
@@ -158,7 +192,7 @@ export default function Phase1Ingestion() {
               className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
             >
               <Atom size={16} />
-              Run Ingestion Agent
+              {hasBackend ? "Upload & Run Pipeline" : "Run Ingestion Agent"}
               <ArrowRight size={16} />
             </button>
           )}

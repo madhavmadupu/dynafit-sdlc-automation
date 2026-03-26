@@ -1,7 +1,6 @@
 "use client";
 
 import { useDynafitStore } from "@/store/useDynafitStore";
-import { simulateRetrieval } from "@/lib/simulation";
 import StatCard from "@/components/shared/StatCard";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,13 @@ const PIPELINE_STEPS = [
   { label: "Context Assembly", desc: "Merge results" },
 ];
 
-export default function Phase2Retrieval() {
+interface Props {
+  runRetrieval: () => Promise<void>;
+  hasBackend: boolean;
+  backendRunId: string | null;
+}
+
+export default function Phase2Retrieval({ runRetrieval, hasBackend, backendRunId }: Props) {
   const { run, retryPhase } = useDynafitStore();
   const phase = run.phases.find((p) => p.key === "retrieval")!;
   const prevPhase = run.phases.find((p) => p.key === "ingestion")!;
@@ -143,15 +148,22 @@ export default function Phase2Retrieval() {
       )}
 
       {/* Idle — run button */}
-      {phase.status === "idle" && canRun && (
+      {phase.status === "idle" && canRun && !backendRunId && (
         <button
-          onClick={simulateRetrieval}
+          onClick={runRetrieval}
           className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-2"
         >
           <Search size={16} />
           Run Knowledge Retrieval
           <ArrowRight size={16} />
         </button>
+      )}
+
+      {phase.status === "idle" && canRun && backendRunId && (
+        <div className="flex items-center justify-center gap-2 py-8 text-brand-400">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm">Backend pipeline is running this phase automatically...</span>
+        </div>
       )}
 
       {phase.status === "idle" && !canRun && (
