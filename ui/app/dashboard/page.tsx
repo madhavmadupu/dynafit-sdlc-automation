@@ -21,7 +21,7 @@ export default function DashboardPage() {
       <Navbar />
       <PhaseStepper />
       <main className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="w-full px-6 py-8">
           {run.activePhaseIndex === -1 && <WelcomeScreen />}
           {run.activePhaseIndex === 0 && (
             <Phase1Ingestion runIngestion={runner.runIngestion} hasBackend={runner.hasBackend} />

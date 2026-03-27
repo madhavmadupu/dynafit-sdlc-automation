@@ -13,7 +13,21 @@
       "Bash(taskkill //PID 20184 //F)",
       "Bash(taskkill:*)",
       "Bash(grep -E \"\\\\.\\(md|txt|cfg|ini|toml\\)$|README|Makefile\")",
-      "Bash(ls -la /c/Users/madha/code/citta/projects/dynafit-sdlc-automation/README*)"
+      "Bash(ls -la /c/Users/madha/code/citta/projects/dynafit-sdlc-automation/README*)",
+      "Bash(gh run:*)",
+      "Bash(ruff check:*)",
+      "Bash(python:*)",
+      "Bash(ruff format:*)",
+      "Bash(ruff:*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(ls C:/Users/madha/code/citta/projects/dynafit-sdlc-automation/ui/components/shared/ErrorBanner*)",
+      "Bash(for d:*)",
+      "Bash(do test:*)",
+      "Bash(echo \"MISSING: $d/__init__.py\")",
+      "Bash(done)",
+      "Bash(do touch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
