@@ -40,12 +40,56 @@ export function usePhaseRunner() {
   const [isRunning, setIsRunning] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Check backend health on mount
+  // Check backend health on mount and reconnect to existing run if available
   useEffect(() => {
-    api.checkBackendHealth().then((ok) => {
+    api.checkBackendHealth().then(async (ok) => {
       setHasBackend(ok);
+      if (!ok) return;
+
+      // Reconnect to an in-progress run after page refresh
+      const savedRunId = typeof window !== "undefined"
+        ? localStorage.getItem("dynafit_run_id")
+        : null;
+      if (savedRunId && !backendRunId) {
+        try {
+          const status = await api.getRunStatus(savedRunId);
+          setBackendRunId(savedRunId);
+
+          if (status.status === "RUNNING") {
+            // Pipeline still running — reconnect SSE
+            connectStream(savedRunId);
+          } else if (
+            status.status === "AWAITING_REVIEW" ||
+            status.status === "COMPLETED"
+          ) {
+            // Pipeline finished or paused — fetch results and restore phase states
+            await fetchAndPopulateResults(savedRunId);
+
+            // Restore phase statuses from backend
+            if (status.phases) {
+              for (const phase of PHASE_ORDER) {
+                const ps = status.phases[phase];
+                if (ps?.status === "completed") {
+                  completePhase(phase, ps.stats || {});
+                }
+              }
+            }
+
+            // Navigate to the appropriate phase
+            if (status.status === "AWAITING_REVIEW") {
+              goToPhase(4); // validation phase
+            } else {
+              goToPhase(0);
+            }
+          }
+        } catch {
+          // Stale run ID — clean up
+          localStorage.removeItem("dynafit_run_id");
+        }
+      }
     });
-  }, [setHasBackend]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch results from backend and populate the store
   const fetchAndPopulateResults = useCallback(

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useDynafitStore } from "@/store/useDynafitStore";
-import { api } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -15,11 +14,9 @@ interface OverrideModalProps {
   open: boolean;
   onClose: () => void;
   item: ClassificationResult | null;
-  hasBackend?: boolean;
-  backendRunId?: string | null;
 }
 
-export default function OverrideModal({ open, onClose, item, hasBackend, backendRunId }: OverrideModalProps) {
+export default function OverrideModal({ open, onClose, item }: OverrideModalProps) {
   const { overrideClassification } = useDynafitStore();
   const [newVerdict, setNewVerdict] = useState<FitmentClass | null>(null);
   const [reason, setReason] = useState("");
@@ -30,26 +27,8 @@ export default function OverrideModal({ open, onClose, item, hasBackend, backend
 
     setSubmitting(true);
     try {
-      // Update local store
+      // Update local store only — backend submission happens in bulk via handleSubmitReview
       overrideClassification(item.requirementId, newVerdict, reason.trim(), "consultant@company.com");
-
-      // If backend is connected, submit the review decision to the backend
-      if (hasBackend && backendRunId) {
-        try {
-          await api.submitReview(backendRunId, {
-            decisions: [
-              {
-                atom_id: item.requirementId,
-                verdict: newVerdict,
-                reason: reason.trim(),
-                reviewed_by: "consultant@company.com",
-              },
-            ],
-          });
-        } catch (e) {
-          console.error("Backend review submission failed (local override applied):", e);
-        }
-      }
 
       setNewVerdict(null);
       setReason("");

@@ -148,8 +148,17 @@ export const useDynafitStore = create<DynafitStore>()(
       setHasBackend: (v) =>
         set({ hasBackend: v }, false, "setHasBackend"),
 
-      setBackendRunId: (id) =>
-        set({ backendRunId: id }, false, "setBackendRunId"),
+      setBackendRunId: (id) => {
+        // Persist to localStorage so we can reconnect after page refresh
+        if (typeof window !== "undefined") {
+          if (id) {
+            localStorage.setItem("dynafit_run_id", id);
+          } else {
+            localStorage.removeItem("dynafit_run_id");
+          }
+        }
+        set({ backendRunId: id }, false, "setBackendRunId");
+      },
 
       // ─── Navigation ──────────────────────────────────────────
       goToPhase: (index: number) => {

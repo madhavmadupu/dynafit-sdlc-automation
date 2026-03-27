@@ -27,7 +27,10 @@
       "Bash(done)",
       "Bash(do touch:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find ./tests -name *.py -type f)",
+      "Bash(find ./ui -name *.ts -path */types/*)"
     ]
   }
 }

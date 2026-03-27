@@ -10,7 +10,7 @@ import StatCard from "@/components/shared/StatCard";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import OverrideModal from "@/components/modals/OverrideModal";
 import { cn } from "@/lib/utils";
-import type { ClassificationResult } from "@/types";
+import type { ClassificationResult, ValidatedFitment } from "@/types";
 import {
   CheckCircle, Loader2, Lock, ArrowRight, Download, Shield,
   AlertTriangle, FileText, Settings, ArrowDown, Play
@@ -47,33 +47,62 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Collect any overrides the user has made
-      const decisions = fitments
-        .filter((f) => f.consultantVerified)
-        .map((f) => ({
-          atom_id: f.requirementId,
-          verdict: f.finalVerdict,
-          reason: f.overrideReason || "Consultant reviewed",
-          reviewed_by: f.overriddenBy || "consultant",
-        }));
+      // Send decisions for ALL atoms — overrides carry the new verdict,
+      // non-overridden items carry the original AI verdict as approval.
+      const decisions = fitments.map((f) => ({
+        atom_id: f.requirementId,
+        verdict: f.finalVerdict,
+        reason: f.overrideReason || "Consultant approved AI verdict",
+        reviewed_by: f.overriddenBy || "consultant",
+      }));
+
+      const overrideCount = fitments.filter((f) => f.consultantVerified).length;
 
       startPhase("validation");
 
-      const result = await api.submitReview(backendRunId, { decisions });
+      await api.submitReview(backendRunId, { decisions });
 
-      // Fetch final results and complete validation
+      // Re-fetch results to get the validated data from the backend
       const results = await api.getRunResults(backendRunId);
+
+      // Update the store with fresh data from backend
+      const { setClassificationResults, setValidatedFitments, setRunStats } =
+        useDynafitStore.getState();
+
       if (results.classificationResults?.length) {
+        setClassificationResults(results.classificationResults);
+
+        const validated: ValidatedFitment[] =
+          results.classificationResults.map((c: ClassificationResult) => ({
+            ...c,
+            consultantVerified: true,
+            conflictFlags: [],
+            finalVerdict: c.classification,
+          }));
+        setValidatedFitments(validated);
+
+        const fit = validated.filter((v) => v.finalVerdict === "FIT").length;
+        const partial = validated.filter((v) => v.finalVerdict === "PARTIAL_FIT").length;
+        const gap = validated.filter((v) => v.finalVerdict === "GAP").length;
+        setRunStats({
+          totalRequirements: validated.length,
+          fit,
+          partialFit: partial,
+          gap,
+          flagged: validated.filter((v) => v.confidence < 0.65).length,
+          processingTimeMs: 0,
+        });
+
         completePhase("validation", {
-          totalVerified: results.classificationResults.length,
-          overrides: decisions.length,
+          totalVerified: validated.length,
+          overrides: overrideCount,
           conflicts: 0,
           exportReady: "true",
         });
       } else {
         completePhase("validation", {
           totalVerified: fitments.length,
-          overrides: decisions.length,
+          overrides: overrideCount,
           conflicts: 0,
           exportReady: "true",
         });
@@ -401,8 +430,6 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
           setOverrideItem(null);
         }}
         item={overrideItem}
-        hasBackend={hasBackend}
-        backendRunId={backendRunId}
       />
     </div>
   );

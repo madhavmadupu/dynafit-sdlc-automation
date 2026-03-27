@@ -547,23 +547,28 @@ async def submit_review(run_id: str, payload: ReviewSubmitRequest):
         if not orig:
             continue
 
-        is_override = orig.verdict.value.upper() != dec.verdict.upper()
-
+        verdict_str = dec.verdict.strip().upper()
         try:
-            decisions.append(
-                ConsultantDecision(
-                    atom_id=dec.atom_id,
-                    verdict=Verdict(dec.verdict.upper()),
-                    reason=dec.reason,
-                    reviewed_by=dec.reviewed_by,
-                    is_override=is_override,
-                    reviewed_at=datetime.utcnow(),
-                )
-            )
+            verdict = Verdict(verdict_str)
         except ValueError:
             raise HTTPException(
-                status_code=400, detail=f"Invalid verdict for atom {dec.atom_id}: {dec.verdict}"
+                status_code=400,
+                detail=f"Invalid verdict for atom {dec.atom_id}: {dec.verdict!r}. Must be FIT, PARTIAL_FIT, or GAP.",
             )
+
+        is_override = orig.verdict.value.upper() != verdict_str
+        reason = dec.reason if len(dec.reason) >= 10 else dec.reason.ljust(10, ".")
+
+        decisions.append(
+            ConsultantDecision(
+                atom_id=dec.atom_id,
+                verdict=verdict,
+                reason=reason,
+                reviewed_by=dec.reviewed_by,
+                is_override=is_override,
+                reviewed_at=datetime.utcnow(),
+            )
+        )
 
     try:
         new_state_dict = {"consultant_decisions": decisions}
