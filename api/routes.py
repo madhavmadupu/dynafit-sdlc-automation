@@ -469,6 +469,51 @@ async def export_fitment_matrix(run_id: str):
     )
 
 
+@router.get("/runs/{run_id}/fdd")
+async def download_fdd(run_id: str):
+    """Generate and download the Functional Design Document (.docx)."""
+    config = {"configurable": {"thread_id": run_id}}
+    try:
+        state_tuple = await graph.aget_state(config)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Run state not found")
+
+    state = state_tuple.values
+    validated_batch = state.get("validated_batch")
+    atoms = state.get("atoms", [])
+
+    if not validated_batch:
+        # Build a lightweight batch from classification results for FDD generation
+        classification_results = state.get("classification_results", [])
+        if not classification_results:
+            raise HTTPException(
+                status_code=404,
+                detail="No classification results available. Run the pipeline first.",
+            )
+
+        from core.schemas.classification_result import (
+            ConflictReport,
+            ValidatedFitmentBatch,
+        )
+
+        validated_batch = ValidatedFitmentBatch(
+            run_id=run_id,
+            results=classification_results,
+            conflict_report=ConflictReport(run_id=run_id),
+            total_atoms=len(classification_results),
+        )
+
+    from agents.validation.fdd_generator import generate_fdd
+
+    fdd_path = generate_fdd(validated_batch, atoms)
+
+    return FileResponse(
+        path=fdd_path,
+        filename=f"FDD_{run_id[:8]}.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+
+
 @router.get(
     "/runs/{run_id}/review",
     response_model=ReviewListResponse,

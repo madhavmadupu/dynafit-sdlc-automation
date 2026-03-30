@@ -179,6 +179,14 @@ class DynafitAPI {
     if (!response.ok) throw new Error("Export failed — file may not be generated yet.");
     return response.blob();
   }
+
+  async downloadFDD(runId: string): Promise<Blob> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/runs/${runId}/fdd`
+    );
+    if (!response.ok) throw new Error("FDD generation failed — ensure the pipeline has completed.");
+    return response.blob();
+  }
 }
 
 export const api = new DynafitAPI();

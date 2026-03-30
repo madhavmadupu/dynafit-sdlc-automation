@@ -33,6 +33,7 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
   const [overrideItem, setOverrideItem] = useState<ClassificationResult | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [generatingFDD, setGeneratingFDD] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -41,6 +42,37 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
   const awaitingReview = phase.status === "idle" && canRun && backendRunId && fitments.length > 0;
 
   const { startPhase, completePhase } = useDynafitStore();
+
+  const handleDownloadFDD = async () => {
+    if (!hasBackend || !backendRunId) {
+      const blob = new Blob(["fdd_placeholder"], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "FDD_Document.docx";
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    setGeneratingFDD(true);
+    try {
+      const blob = await api.downloadFDD(backendRunId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `FDD_${backendRunId.slice(0, 8)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      console.error("FDD generation failed:", e);
+      alert(e instanceof Error ? e.message : "FDD generation failed.");
+    } finally {
+      setGeneratingFDD(false);
+    }
+  };
 
   const handleSubmitReview = useCallback(async () => {
     if (!backendRunId) return;
@@ -402,21 +434,50 @@ export default function Phase5Validation({ hasBackend, backendRunId }: Props) {
             </table>
           </div>
 
-          {/* Downstream preview */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-xl p-4 flex items-center gap-3">
-              <ArrowRight size={16} className="text-emerald-400" />
-              <div>
-                <p className="text-xs font-medium text-emerald-300">FDD FOR FITS</p>
-                <p className="text-[10px] text-slate-500">Functional Design Document for standard D365 features</p>
+          {/* FDD Download */}
+          <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-border">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-brand-400" />
+                <span className="text-xs font-medium text-slate-300">Functional Design Document</span>
               </div>
             </div>
-            <div className="bg-red-400/5 border border-red-400/20 rounded-xl p-4 flex items-center gap-3">
-              <ArrowRight size={16} className="text-red-400" />
-              <div>
-                <p className="text-xs font-medium text-red-300">FDD FOR GAPS</p>
-                <p className="text-[10px] text-slate-500">Technical Design Document for custom X++ development</p>
+            <div className="p-4 space-y-3">
+              <p className="text-[11px] text-slate-400">
+                Generate the complete FDD covering all FIT, PARTIAL FIT, and GAP requirements
+                with D365 capability mappings, configuration notes, and consultant overrides.
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-lg py-2">
+                  <p className="text-sm font-semibold text-emerald-300">{fitments.filter(f => f.finalVerdict === "FIT").length}</p>
+                  <p className="text-[9px] text-slate-500">FIT</p>
+                </div>
+                <div className="bg-amber-400/5 border border-amber-400/20 rounded-lg py-2">
+                  <p className="text-sm font-semibold text-amber-300">{fitments.filter(f => f.finalVerdict === "PARTIAL_FIT").length}</p>
+                  <p className="text-[9px] text-slate-500">PARTIAL</p>
+                </div>
+                <div className="bg-red-400/5 border border-red-400/20 rounded-lg py-2">
+                  <p className="text-sm font-semibold text-red-300">{fitments.filter(f => f.finalVerdict === "GAP").length}</p>
+                  <p className="text-[9px] text-slate-500">GAP</p>
+                </div>
               </div>
+              <button
+                onClick={handleDownloadFDD}
+                disabled={generatingFDD}
+                className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {generatingFDD ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Generating FDD...
+                  </>
+                ) : (
+                  <>
+                    <Download size={14} />
+                    Download FDD Document (.docx)
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
