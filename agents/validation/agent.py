@@ -79,15 +79,18 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
             },
         )
         audit_trail.append(entry)
-        await postgres_client.write_audit_entry(
-            run_id=run_id,
-            atom_id=str(result.atom_id),
-            phase=PHASE,
-            action="validated",
-            verdict=result.verdict.value,
-            actor="system",
-            metadata=entry.metadata,
-        )
+        try:
+            await postgres_client.write_audit_entry(
+                run_id=run_id,
+                atom_id=str(result.atom_id),
+                phase=PHASE,
+                action="validated",
+                verdict=result.verdict.value,
+                actor="system",
+                metadata=entry.metadata,
+            )
+        except Exception:
+            pass
 
     # 4. Construct Final Batch
     batch = ValidatedFitmentBatch(
@@ -111,7 +114,10 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
         output_path = None
 
     # Update total run status
-    await postgres_client.update_run_status(run_id, RunStatus.COMPLETED)
+    try:
+        await postgres_client.update_run_status(run_id, RunStatus.COMPLETED)
+    except Exception:
+        pass
 
     log.info(
         f"{PHASE}.complete",

@@ -95,36 +95,38 @@ async def apply_overrides(
             # Clear flag, outcome accepted
             result_by_id[atom_id] = original_result.model_copy(update={"needs_review": False})
 
-        # --- Persist the override/decision to Db ---
+        # --- Persist the override/decision to Db (graceful if unavailable) ---
 
         # 1. Pipeline Audit DB
-        await postgres_client.write_override(
-            run_id=run_id,
-            atom_id=atom_id,
-            original_verdict=original_result.verdict.value,
-            override_verdict=d.verdict.value,
-            reason=d.reason,
-            reviewed_by=d.reviewed_by,
-        )
+        try:
+            await postgres_client.write_override(
+                run_id=run_id,
+                atom_id=atom_id,
+                original_verdict=original_result.verdict.value,
+                override_verdict=d.verdict.value,
+                reason=d.reason,
+                reviewed_by=d.reviewed_by,
+            )
+        except Exception as e:
+            log.warning("override_handler.write_override_skipped", error=str(e))
 
         # 2. Add to Historical Fitment DB (pgvector)
-        # Needs dense vector from retrieval context query
-        # phase, but those aren't directly saved on the context.
-        # We'll re-embed the atom text on the fly.
-        embedding = await embedder.embed_requirement(atom.text)
-
-        await pgvector_client.write_fitment(
-            atom_hash=atom.atom_hash,
-            original_text=atom.text,  # Normalized text
-            module=atom.module.value,
-            verdict=d.verdict.value,
-            confidence=1.0,  # Human confidence is absolute
-            rationale=d.reason,
-            matched_capability=result_by_id[atom_id].matched_capability,
-            wave_id=run_id,
-            embedding=embedding,
-            overridden_by_consultant=d.is_override,
-        )
+        try:
+            embedding = await embedder.embed_requirement(atom.text)
+            await pgvector_client.write_fitment(
+                atom_hash=atom.atom_hash,
+                original_text=atom.text,
+                module=atom.module.value,
+                verdict=d.verdict.value,
+                confidence=1.0,
+                rationale=d.reason,
+                matched_capability=result_by_id[atom_id].matched_capability,
+                wave_id=run_id,
+                embedding=embedding,
+                overridden_by_consultant=d.is_override,
+            )
+        except Exception as e:
+            log.warning("override_handler.write_fitment_skipped", error=str(e))
 
         log.info(
             "override_applied_and_recorded",
