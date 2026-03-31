@@ -13,6 +13,7 @@ import structlog
 from agents.ingestion.doc_parser import parse_document
 from agents.ingestion.normalizer import normalize_atoms
 from agents.ingestion.req_extractor import extract_atoms_from_chunks
+from agents.ingestion.semantic_chunker import SemanticChunkerConfig, semantic_chunk
 from agents.ingestion.validator import validate_atoms
 from core.config.settings import settings
 
@@ -47,6 +48,19 @@ async def run(state: dict[str, Any]) -> dict[str, Any]:
             chunks = parse_document(file_path)
             log.info(
                 f"{PHASE}.parsed",
+                run_id=run_id,
+                file=file_path,
+                chunks=len(chunks),
+            )
+
+            # ── Phase 1a.5: Semantic chunking ────────────────────────────────
+            sc_config = SemanticChunkerConfig(
+                similarity_threshold=settings.SEMANTIC_CHUNK_THRESHOLD,
+                min_sentences_to_chunk=settings.SEMANTIC_CHUNK_MIN_SENTENCES,
+            )
+            chunks = await semantic_chunk(chunks, sc_config)
+            log.info(
+                f"{PHASE}.semantic_chunked",
                 run_id=run_id,
                 file=file_path,
                 chunks=len(chunks),

@@ -96,6 +96,16 @@ class DynafitSettings(BaseSettings):
         default=86400, description="RetrievalContext cache TTL in seconds (24 hours)"
     )
 
+    # ── Semantic Chunking ───────────────────────────────────────────────────────
+    SEMANTIC_CHUNK_THRESHOLD: float = Field(
+        default=0.75,
+        description="Cosine similarity threshold for semantic chunk splitting (lower = more splits)",
+    )
+    SEMANTIC_CHUNK_MIN_SENTENCES: int = Field(
+        default=3,
+        description="Minimum sentences in a chunk before semantic splitting is attempted",
+    )
+
     # ── Pipeline Behaviour ────────────────────────────────────────────────────
     BATCH_SIZE: int = Field(default=50, description="Number of requirements per processing batch")
     MAX_INGESTION_RETRIES: int = Field(
